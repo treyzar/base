@@ -36,3 +36,4 @@
 // export const endpoints = {
 //   users: userApi,
 // };
+import { api } from './api-client';

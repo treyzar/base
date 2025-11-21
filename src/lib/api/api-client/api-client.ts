@@ -4,52 +4,18 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
   AxiosError,
-} from "axios";
-
-/**
- * Стандартный ответ от API
- */
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  status: number;
-}
-
-/**
- * Структура ошибки от API
- */
-export interface ApiError {
-  message: string;
-  status?: number;
-  errors?: Record<string, string[]>;
-}
-
-/**
- * Колбэк для отслеживания прогресса загрузки
- */
-export interface UploadProgressEvent {
-  loaded: number;
-  total?: number;
-  progress: number; // 0-100
-}
-
-/**
- * Тип для колбэка прогресса
- */
-export type UploadProgressCallback = (event: UploadProgressEvent) => void;
+} from 'axios';
+import { ApiError, UploadProgressCallback } from '@lib';
 
 class ApiClient {
   private instance: AxiosInstance;
 
-  constructor(
-    baseURL: string = import.meta.env.VITE_API_URL ||
-      "http://localhost:3000/api"
-  ) {
+  constructor(baseURL: string = import.meta.env.VITE_API_URL || 'http://localhost:3000/api') {
     this.instance = axios.create({
       baseURL,
       timeout: 10000,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -63,7 +29,7 @@ class ApiClient {
     // Request interceptor - добавление токена к запросам
     this.instance.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem('token');
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -98,19 +64,19 @@ class ApiClient {
         case 401:
           // Неавторизован - очищаем токен и редиректим
           this.removeAuthToken();
-          window.location.href = "/login";
+          window.location.href = '/login';
           break;
 
         case 403:
-          console.error("Доступ запрещен");
+          console.error('Доступ запрещен');
           break;
 
         case 404:
-          console.error("Ресурс не найден");
+          console.error('Ресурс не найден');
           break;
 
         case 500:
-          console.error("Ошибка сервера:", error.response.data);
+          console.error('Ошибка сервера:', error.response.data);
           break;
 
         default:
@@ -118,10 +84,10 @@ class ApiClient {
       }
     } else if (error.request) {
       // Запрос был отправлен, но ответа не получено
-      console.error("Сервер не отвечает:", error.request);
+      console.error('Сервер не отвечает:', error.request);
     } else {
       // Ошибка при настройке запроса
-      console.error("Ошибка запроса:", error.message);
+      console.error('Ошибка запроса:', error.message);
     }
   }
 
@@ -135,14 +101,8 @@ class ApiClient {
    * const users = await apiClient.get<User[]>('/users');
    * const user = await apiClient.get<User>('/users/123');
    */
-  async get<TResponse>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.get(
-      url,
-      config
-    );
+  async get<TResponse>(url: string, config?: AxiosRequestConfig): Promise<TResponse> {
+    const response: AxiosResponse<TResponse> = await this.instance.get(url, config);
     return response.data;
   }
 
@@ -164,11 +124,7 @@ class ApiClient {
     data?: TRequest,
     config?: AxiosRequestConfig
   ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.post(
-      url,
-      data,
-      config
-    );
+    const response: AxiosResponse<TResponse> = await this.instance.post(url, data, config);
     return response.data;
   }
 
@@ -190,11 +146,7 @@ class ApiClient {
     data?: TRequest,
     config?: AxiosRequestConfig
   ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.put(
-      url,
-      data,
-      config
-    );
+    const response: AxiosResponse<TResponse> = await this.instance.put(url, data, config);
     return response.data;
   }
 
@@ -215,11 +167,7 @@ class ApiClient {
     data?: TRequest,
     config?: AxiosRequestConfig
   ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.patch(
-      url,
-      data,
-      config
-    );
+    const response: AxiosResponse<TResponse> = await this.instance.patch(url, data, config);
     return response.data;
   }
 
@@ -234,14 +182,8 @@ class ApiClient {
    * // или с ответом
    * const result = await apiClient.delete<{ success: boolean }>('/users/123');
    */
-  async delete<TResponse = void>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.delete(
-      url,
-      config
-    );
+  async delete<TResponse = void>(url: string, config?: AxiosRequestConfig): Promise<TResponse> {
+    const response: AxiosResponse<TResponse> = await this.instance.delete(url, config);
     return response.data;
   }
 
@@ -267,27 +209,21 @@ class ApiClient {
     formData: FormData,
     onUploadProgress?: UploadProgressCallback
   ): Promise<TResponse> {
-    const response: AxiosResponse<TResponse> = await this.instance.post(
-      url,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        onUploadProgress: (progressEvent) => {
-          if (onUploadProgress && progressEvent.total) {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            onUploadProgress({
-              loaded: progressEvent.loaded,
-              total: progressEvent.total,
-              progress,
-            });
-          }
-        },
-      }
-    );
+    const response: AxiosResponse<TResponse> = await this.instance.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onUploadProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onUploadProgress({
+            loaded: progressEvent.loaded,
+            total: progressEvent.total,
+            progress,
+          });
+        }
+      },
+    });
     return response.data;
   }
 
@@ -304,16 +240,16 @@ class ApiClient {
    * @param token - JWT токен
    */
   setAuthToken(token: string): void {
-    localStorage.setItem("token", token);
-    this.instance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem('token', token);
+    this.instance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
   /**
    * Удалить токен авторизации
    */
   removeAuthToken(): void {
-    localStorage.removeItem("token");
-    delete this.instance.defaults.headers.common["Authorization"];
+    localStorage.removeItem('token');
+    delete this.instance.defaults.headers.common['Authorization'];
   }
 
   /**
@@ -321,7 +257,7 @@ class ApiClient {
    * @returns true если токен существует
    */
   hasAuthToken(): boolean {
-    return !!localStorage.getItem("token");
+    return !!localStorage.getItem('token');
   }
 }
 
@@ -356,11 +292,8 @@ export const api = {
   /**
    * PUT запрос (полная замена)
    */
-  put: <TResponse, TRequest = unknown>(
-    url: string,
-    data?: TRequest,
-    config?: AxiosRequestConfig
-  ) => apiClient.put<TResponse, TRequest>(url, data, config),
+  put: <TResponse, TRequest = unknown>(url: string, data?: TRequest, config?: AxiosRequestConfig) =>
+    apiClient.put<TResponse, TRequest>(url, data, config),
 
   /**
    * PATCH запрос (частичное обновление)
@@ -380,11 +313,8 @@ export const api = {
   /**
    * Загрузка файлов
    */
-  upload: <TResponse>(
-    url: string,
-    formData: FormData,
-    onUploadProgress?: UploadProgressCallback
-  ) => apiClient.upload<TResponse>(url, formData, onUploadProgress),
+  upload: <TResponse>(url: string, formData: FormData, onUploadProgress?: UploadProgressCallback) =>
+    apiClient.upload<TResponse>(url, formData, onUploadProgress),
 
   /**
    * Установить токен авторизации
