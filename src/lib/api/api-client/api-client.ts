@@ -6,7 +6,6 @@ import axios, {
   AxiosError,
 } from 'axios';
 import { ApiError, UploadProgressCallback } from '@lib';
-
 class ApiClient {
   private instance: AxiosInstance;
 

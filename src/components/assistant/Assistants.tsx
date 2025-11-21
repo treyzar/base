@@ -1,3 +1,4 @@
+// src/components/assistant/Assistant.tsx
 import React, { useMemo, useState } from 'react';
 import {
   Box,
@@ -11,6 +12,7 @@ import {
   SimpleGrid,
   Spinner,
   Center,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 
@@ -127,7 +129,9 @@ const STEPS: StepConfig[] = [
 
 type Profile = Record<Field, Answer>;
 
-// --- моковые лотереи ---
+// -----------------------------
+// Моковые лотереи
+// -----------------------------
 
 const MOCK_LOTTERIES: Lottery[] = [
   {
@@ -188,7 +192,9 @@ const MOCK_LOTTERIES: Lottery[] = [
 
 const getInitialLotteries = (): Lottery[] => MOCK_LOTTERIES.slice(0, 3);
 
-// --- базовый скоринг под анкету ---
+// -----------------------------
+// Скоринг
+// -----------------------------
 
 const scoreLottery = (profile: Profile, lottery: Lottery): number => {
   let score = 0;
@@ -276,7 +282,52 @@ const explainMatch = (profile: Profile, lottery: Lottery): string => {
 };
 
 // -----------------------------
-// Анкета профиля
+// Вспомогательный ChatBubble
+// -----------------------------
+
+interface ChatBubbleProps {
+  role: 'assistant' | 'system' | 'user';
+  children: React.ReactNode;
+}
+
+const ChatBubble: React.FC<ChatBubbleProps> = ({ role, children }) => {
+  const isAssistant = role === 'assistant';
+  const isUser = role === 'user';
+
+  const bubbleBg = useColorModeValue(
+    isAssistant ? 'white' : isUser ? 'blue.500' : 'gray.100',
+    isAssistant ? 'gray.800' : isUser ? 'blue.400' : 'gray.700'
+  );
+  const bubbleBorder = useColorModeValue(
+    isAssistant ? 'blue.100' : isUser ? 'blue.500' : 'gray.200',
+    isAssistant ? 'blue.600' : isUser ? 'blue.300' : 'gray.600'
+  );
+  const textColor = useColorModeValue(isUser ? 'white' : 'gray.900', 'white');
+
+  const maxWidth = useBreakpointValue({ base: '100%', md: '80%' });
+
+  const justifyContent = isUser ? 'flex-end' : isAssistant ? 'flex-start' : 'center';
+
+  return (
+    <Box display="flex" justifyContent={justifyContent}>
+      <Box
+        maxW={maxWidth}
+        bg={bubbleBg}
+        borderRadius="2xl"
+        borderWidth="1px"
+        borderColor={bubbleBorder}
+        boxShadow="md"
+        p={{ base: 4, md: 5 }}
+        color={textColor}
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+};
+
+// -----------------------------
+// Анкета профиля (внутри чата)
 // -----------------------------
 
 interface ProfileWizardProps {
@@ -299,7 +350,6 @@ const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCancel }) =
   const [error, setError] = useState<string | null>(null);
 
   const currentStep = STEPS[stepIndex];
-  const cardBg = useColorModeValue('white', 'gray.800');
 
   const handleSelect = (field: Field, value: Answer) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
@@ -329,26 +379,25 @@ const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCancel }) =
     setStepIndex((i) => i - 1);
   };
 
-  // 🔧 ВАЖНО: прогресс считаем по КОЛИЧЕСТВУ ЗАВЕРШЁННЫХ шагов
-  const completedSteps = stepIndex; // на первом вопросе = 0
+  const completedSteps = stepIndex;
   const progressPercent = (completedSteps / STEPS.length) * 100;
 
   return (
-    <Box>
-      <Box mb={4}>
+    <Stack>
+      <Box>
         <HStack justify="space-between" mb={2}>
-          <Text fontSize="sm" color="gray.500">
-            Шаг {stepIndex + 1} из {STEPS.length}
+          <Text fontSize="xs" color="gray.500">
+            Анкета: шаг {stepIndex + 1} из {STEPS.length}
           </Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="xs" color="gray.500">
             {Math.round(progressPercent)}%
           </Text>
         </HStack>
         <Progress.Root
           variant="outline"
           maxW="auto"
-          defaultValue={0}
           value={progressPercent}
+          defaultValue={0}
           colorPalette="green"
           animated
         >
@@ -358,54 +407,63 @@ const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCancel }) =
         </Progress.Root>
       </Box>
 
-      <Box bg={cardBg} borderRadius="2xl" boxShadow="md" p={{ base: 4, md: 6 }}>
+      <Stack>
+        <Heading size="sm">{currentStep.title}</Heading>
         <Stack>
-          <Heading size="md">{currentStep.title}</Heading>
-          <Stack>
-            {currentStep.options.map((opt) => {
-              const active = profile[currentStep.field] === opt.value;
-              return (
-                <Button
-                  key={String(opt.value)}
-                  variant={active ? 'solid' : 'outline'}
-                  colorScheme="blue"
-                  justifyContent="flex-start"
-                  onClick={() => handleSelect(currentStep.field, opt.value)}
-                >
+          {currentStep.options.map((opt) => {
+            const active = profile[currentStep.field] === opt.value;
+            return (
+              <Button
+                key={String(opt.value)}
+                variant={active ? 'solid' : 'outline'}
+                colorScheme="blue"
+                justifyContent="flex-start"
+                w="100%"
+                borderRadius="lg"
+                size="sm"
+                fontWeight="normal"
+                whiteSpace="normal"
+                textAlign="left"
+                py={3}
+                px={4}
+                onClick={() => handleSelect(currentStep.field, opt.value)}
+              >
+                <Box as="span" w="100%" textAlign="left">
                   {opt.label}
-                </Button>
-              );
-            })}
-          </Stack>
-          {error && (
-            <Text fontSize="sm" color="red.500">
-              {error}
-            </Text>
-          )}
+                </Box>
+              </Button>
+            );
+          })}
         </Stack>
-      </Box>
+        {error && (
+          <Text fontSize="xs" color="red.500">
+            {error}
+          </Text>
+        )}
+      </Stack>
 
-      <HStack justify="space-between" mt={6}>
-        <Button variant="outline" onClick={handleBack}>
+      <HStack justify="space-between" pt={2}>
+        <Button variant="ghost" size="sm" onClick={handleBack}>
           Назад
         </Button>
-        <Button colorScheme="blue" onClick={handleNext}>
+        <Button colorScheme="blue" size="sm" onClick={handleNext}>
           {stepIndex === STEPS.length - 1 ? 'Показать рекомендации' : 'Далее'}
         </Button>
       </HStack>
-    </Box>
+    </Stack>
   );
 };
+
 // -----------------------------
-// Мини-анкетка для выбора 1 из 3
+// Мини-анкета для выбора 1 из 3
 // -----------------------------
 
 type MicroField = 'pricePriority' | 'riskFeeling' | 'playRhythm';
 
 interface MicroAnswers {
-  pricePriority: 'economy' | 'balance' | 'dontcare';
-  riskFeeling: 'avoid' | 'neutral' | 'seek';
-  playRhythm: 'often' | 'sometimes' | 'rare';
+  pricePriority: 'economy' | 'balance' | 'dontcare' | null;
+  riskFeeling: 'avoid' | 'neutral' | 'seek' | null;
+  playRhythm: 'often' | 'sometimes' | 'rare' | null;
 }
 
 interface MicroStep {
@@ -453,17 +511,16 @@ interface RefineWizardProps {
 const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, onComplete }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<MicroAnswers>({
-    pricePriority: 'balance',
-    riskFeeling: 'neutral',
-    playRhythm: 'sometimes',
+    pricePriority: null,
+    riskFeeling: null,
+    playRhythm: null,
   });
   const [error, setError] = useState<string | null>(null);
 
-  const cardBg = useColorModeValue('white', 'gray.800');
   const currentStep = MICRO_STEPS[stepIndex];
 
   const handleSelect = (field: MicroField, value: MicroAnswers[MicroField]) => {
-    setAnswers((prev) => ({ ...prev, [field]: value as any }));
+    setAnswers((prev) => ({ ...prev, [field]: value }));
     if (error) setError(null);
   };
 
@@ -488,26 +545,25 @@ const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, onCompl
     setStepIndex((i) => i - 1);
   };
 
-  // 🔧 Тоже считаем прогресс по количеству завершённых шагов
   const completedMicroSteps = stepIndex;
   const progressPercent = (completedMicroSteps / MICRO_STEPS.length) * 100;
 
   return (
-    <Box>
-      <Box mb={4}>
+    <Stack>
+      <Box>
         <HStack justify="space-between" mb={2}>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="xs" color="gray.500">
             Дополнительные вопросы {stepIndex + 1} из {MICRO_STEPS.length}
           </Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="xs" color="gray.500">
             {Math.round(progressPercent)}%
           </Text>
         </HStack>
         <Progress.Root
           variant="outline"
           maxW="auto"
-          defaultValue={0}
           value={progressPercent}
+          defaultValue={0}
           colorPalette="green"
           animated
         >
@@ -517,77 +573,74 @@ const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, onCompl
         </Progress.Root>
       </Box>
 
-      <Box bg={cardBg} borderRadius="2xl" boxShadow="md" p={{ base: 4, md: 6 }}>
+      <Stack>
+        <Heading size="sm">{currentStep.title}</Heading>
         <Stack>
-          <Heading size="md">{currentStep.title}</Heading>
-          <Stack>
-            {currentStep.options.map((opt) => {
-              const active = answers[currentStep.field] === opt.value;
-              return (
-                <Button
-                  key={String(opt.value)}
-                  variant={active ? 'solid' : 'outline'}
-                  colorScheme="purple"
-                  justifyContent="flex-start"
-                  onClick={() => handleSelect(currentStep.field, opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              );
-            })}
-          </Stack>
-          {error && (
-            <Text fontSize="sm" color="red.500">
-              {error}
-            </Text>
-          )}
+          {currentStep.options.map((opt) => {
+            const active = answers[currentStep.field] === opt.value;
+            return (
+              <Button
+                key={String(opt.value)}
+                variant={active ? 'solid' : 'outline'}
+                colorScheme="purple"
+                justifyContent="flex-start"
+                w="100%"
+                borderRadius="lg"
+                size="sm"
+                fontWeight="normal"
+                whiteSpace="normal"
+                textAlign="left"
+                py={3}
+                px={4}
+                onClick={() => handleSelect(currentStep.field, opt.value)}
+              >
+                {opt.label}
+              </Button>
+            );
+          })}
         </Stack>
-      </Box>
+        {error && (
+          <Text fontSize="xs" color="red.500">
+            {error}
+          </Text>
+        )}
+      </Stack>
 
-      <HStack justify="space-between" mt={6}>
-        <Button variant="outline" onClick={handleBack}>
+      <HStack justify="space-between" pt={2}>
+        <Button variant="ghost" size="sm" onClick={handleBack}>
           Назад
         </Button>
-        <Button colorScheme="purple" onClick={handleNext}>
+        <Button colorScheme="purple" size="sm" onClick={handleNext}>
           {stepIndex === MICRO_STEPS.length - 1 ? 'Выбрать лучший вариант' : 'Далее'}
         </Button>
       </HStack>
-    </Box>
+    </Stack>
   );
 };
 
-// логика выбора лучшей лотереи из трёх на основе доп.ответов
+// выбор лучшей лотереи из трёх
 const chooseFinalLottery = (
   lotteries: Lottery[],
   profile: Profile,
   answers: MicroAnswers
 ): Lottery => {
-  // базовый скор по анкете
   const baseScores = lotteries.map((lottery) => ({
     lottery,
     base: scoreLottery(profile, lottery),
   }));
 
-  // донакрутка под мини-анкеты
   const scored = baseScores.map((entry) => {
     let bonus = 0;
 
-    // цена
     if (answers.pricePriority === 'economy') {
-      // бонус тем, у кого цена минимальная
       const minPrice = Math.min(...lotteries.map((l) => l.minPrice));
       if (entry.lottery.minPrice === minPrice) bonus += 3;
     } else if (answers.pricePriority === 'balance') {
-      // лучше те, кто в районе среднего
       const avgPrice = lotteries.reduce((sum, l) => sum + l.minPrice, 0) / lotteries.length;
       const diff = Math.abs(entry.lottery.minPrice - avgPrice);
       if (diff <= 30) bonus += 2;
-    } else {
-      // dontcare — не усиливаем конкретно
-      bonus += 0;
     }
 
-    // риск
     if (answers.riskFeeling === 'avoid') {
       if (entry.lottery.risk === 'low') bonus += 3;
       if (entry.lottery.risk === 'medium') bonus += 1;
@@ -598,13 +651,10 @@ const chooseFinalLottery = (
       if (entry.lottery.risk === 'medium') bonus += 1;
     }
 
-    // ритм игры
     if (answers.playRhythm === 'often') {
-      // для частой игры лучше дешёвые и с низким/средним риском
       if (entry.lottery.minPrice <= 100) bonus += 2;
       if (entry.lottery.risk !== 'high') bonus += 1;
     } else if (answers.playRhythm === 'rare') {
-      // для редкой — можно допустить более высокий риск и крупный чек
       if (entry.lottery.risk === 'high') bonus += 2;
     }
 
@@ -619,7 +669,7 @@ const chooseFinalLottery = (
 };
 
 // -----------------------------
-// Основной ассистент
+// Основной ассистент (страница-чат)
 // -----------------------------
 
 type Phase = 'initial' | 'questionnaire' | 'loading' | 'results' | 'refine' | 'final';
@@ -631,7 +681,7 @@ export const Assistant: React.FC = () => {
   const [finalLottery, setFinalLottery] = useState<Lottery | null>(null);
 
   const pageBg = useColorModeValue('gray.50', 'gray.900');
-  const cardBg = useColorModeValue('white', 'gray.800');
+  const chatBg = useColorModeValue('gray.100', 'gray.800');
 
   const initialLotteries = useMemo(() => getInitialLotteries(), []);
 
@@ -674,38 +724,33 @@ export const Assistant: React.FC = () => {
     setFinalLottery(null);
   };
 
-  // --- Экраны ---
+  // блок быстрых рекомендаций (внутри бабла)
+  const QuickRecommendations = () => {
+    const cardBg = useColorModeValue('white', 'gray.900');
+    const cardBorder = useColorModeValue('gray.200', 'gray.700');
 
-  const renderInitial = () => (
-    <Stack>
-      <Heading size="lg">Подбор лотерей</Heading>
-      <Text color="gray.500">
-        Сначала покажу несколько вариантов, с которых можно начать. Если не понравится — подберём по
-        твоим критериям через короткую анкету.
-      </Text>
-
-      <Box bg={cardBg} borderRadius="2xl" boxShadow="md" p={6}>
-        <Heading size="md" mb={4}>
-          Быстрые рекомендации
-        </Heading>
-        <SimpleGrid columns={{ base: 1, md: 3 }}>
+    return (
+      <Stack>
+        <Heading size="sm">Я нашёл несколько вариантов, с которых можно начать 👇</Heading>
+        <SimpleGrid columns={{ base: 1, md: 3 }} gap="10px">
           {initialLotteries.map((lottery) => (
             <Box
               key={lottery.id}
               borderWidth="1px"
-              borderRadius="lg"
-              p={4}
-              height="100%"
-              display="flex"
-              flexDirection="column"
-              justifyContent="space-between"
+              borderColor={cardBorder}
+              borderRadius="xl"
+              p={3}
+              bg={cardBg}
+              boxShadow="sm"
+              _hover={{ boxShadow: 'md', transform: 'translateY(-2px)' }}
+              transition="all 0.15s ease-out"
             >
               <Stack>
-                <Heading size="sm">{lottery.name}</Heading>
-                <Text fontSize="sm" color="gray.500">
+                <Heading size="xs">{lottery.name}</Heading>
+                <Text fontSize="xs" color="gray.500">
                   {lottery.description}
                 </Text>
-                <HStack mt={2}>
+                <HStack mt={1} wrap="wrap">
                   <Badge colorScheme="blue">{lottery.minPrice} ₽</Badge>
                   <Badge
                     colorScheme={
@@ -718,65 +763,50 @@ export const Assistant: React.FC = () => {
                   >
                     Риск: {lottery.risk}
                   </Badge>
-                  <Badge>{lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}</Badge>
+                  <Badge variant="outline" fontSize="0.65rem">
+                    {lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
+                  </Badge>
                 </HStack>
               </Stack>
             </Box>
           ))}
         </SimpleGrid>
 
-        <HStack justify="space-between" mt={6}>
+        <HStack justify="space-between" pt={2}>
           <Text fontSize="sm" color="gray.500">
             Если эти варианты не заходят — давай настроим подбор под тебя.
           </Text>
-          <Button colorScheme="blue" onClick={handleStartQuestionnaire}>
+          <Button colorScheme="blue" size="sm" onClick={handleStartQuestionnaire}>
             Настроить под себя
           </Button>
         </HStack>
-      </Box>
-    </Stack>
-  );
+      </Stack>
+    );
+  };
 
-  const renderLoading = () => (
-    <Box bg={cardBg} borderRadius="2xl" boxShadow="md" p={8}>
-      <Center flexDirection="column">
-        <Spinner size="lg" color="blue.400" mb={4} />
-        <Text color="gray.500" textAlign="center">
-          Анализирую твои ответы и подбираю лучшие варианты…
-        </Text>
-      </Center>
-    </Box>
-  );
-
-  const renderResults = () => {
+  const ResultsBlock = () => {
     if (!profile) return null;
+    const cardBg = useColorModeValue('white', 'gray.900');
+    const cardBorder = useColorModeValue('gray.200', 'gray.700');
 
     return (
       <Stack>
-        <Heading size="lg">Подходящие варианты 🎯</Heading>
-        <Text color="gray.500">
-          По твоим ответам лучше всего подходят эти лотереи. Далее мы уточним ещё несколько моментов
-          и выберем одну лучшую.
-        </Text>
+        <Heading size="sm">По твоим ответам лучше всего подошли эти лотереи:</Heading>
 
         <SimpleGrid columns={{ base: 1, md: bestLotteries.length === 2 ? 2 : 3 }}>
           {bestLotteries.map((lottery) => (
             <Box
               key={lottery.id}
               borderWidth="1px"
-              borderRadius="lg"
+              borderColor={cardBorder}
+              borderRadius="xl"
               p={4}
               bg={cardBg}
               boxShadow="sm"
-              display="flex"
-              flexDirection="column"
-              gap={3}
             >
-              <Box>
-                <Heading size="sm" mb={1}>
-                  {lottery.name}
-                </Heading>
-                <HStack mb={2}>
+              <Stack>
+                <Heading size="xs">{lottery.name}</Heading>
+                <HStack>
                   <Badge colorScheme="blue">{lottery.minPrice} ₽</Badge>
                   <Badge
                     colorScheme={
@@ -789,33 +819,35 @@ export const Assistant: React.FC = () => {
                   >
                     Риск: {lottery.risk}
                   </Badge>
-                  <Badge>{lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}</Badge>
+                  <Badge variant="outline" fontSize="0.65rem">
+                    {lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
+                  </Badge>
                 </HStack>
-                <Text fontSize="sm" color="gray.500" mb={2}>
+                <Text fontSize="xs" color="gray.500">
                   {lottery.description}
                 </Text>
-                <Text fontSize="sm">{explainMatch(profile, lottery)}</Text>
-              </Box>
+                <Text fontSize="xs">{explainMatch(profile, lottery)}</Text>
 
-              <Box>
-                <Text fontSize="xs" color="gray.500" mt={2} mb={1}>
-                  Особенности:
-                </Text>
-                <Stack fontSize="xs">
-                  {lottery.features.map((f) => (
-                    <Text key={f}>• {f}</Text>
-                  ))}
-                </Stack>
-              </Box>
+                <Box pt={1}>
+                  <Text fontSize="0.65rem" color="gray.500" mb={1}>
+                    Особенности:
+                  </Text>
+                  <Stack fontSize="0.7rem">
+                    {lottery.features.map((f) => (
+                      <Text key={f}>• {f}</Text>
+                    ))}
+                  </Stack>
+                </Box>
+              </Stack>
             </Box>
           ))}
         </SimpleGrid>
 
-        <HStack justify="space-between">
+        <HStack justify="space-between" pt={1}>
           <Text fontSize="sm" color="gray.500">
-            Теперь ещё 2–3 уточняющих вопроса — и выберем один лучший вариант именно под тебя.
+            Теперь ещё несколько уточняющих вопросов — и выберем один лучший вариант.
           </Text>
-          <Button colorScheme="purple" onClick={handleGoRefine}>
+          <Button colorScheme="purple" size="sm" onClick={handleGoRefine}>
             Уточнить и выбрать один
           </Button>
         </HStack>
@@ -823,18 +855,23 @@ export const Assistant: React.FC = () => {
     );
   };
 
-  const renderFinal = () => {
+  const FinalBlock = () => {
     if (!finalLottery || !profile) return null;
+    const cardBg = useColorModeValue('white', 'gray.900');
+    const cardBorder = useColorModeValue('gray.200', 'gray.700');
 
     return (
       <Stack>
-        <Heading size="lg">Твой лучший вариант 🏆</Heading>
-        <Text color="gray.500">
-          С учётом всех ответов и уточняющих вопросов, сейчас больше всего тебе подходит эта
-          лотерея.
-        </Text>
+        <Heading size="sm">С учётом всех ответов тебе больше всего подходит:</Heading>
 
-        <Box bg={cardBg} borderRadius="2xl" boxShadow="md" p={6}>
+        <Box
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderRadius="2xl"
+          p={5}
+          bg={cardBg}
+          boxShadow="md"
+        >
           <Heading size="md" mb={2}>
             {finalLottery.name}
           </Heading>
@@ -851,13 +888,18 @@ export const Assistant: React.FC = () => {
             >
               Риск: {finalLottery.risk}
             </Badge>
-            <Badge>{finalLottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}</Badge>
-            <Badge>{finalLottery.format === 'online' ? 'Онлайн' : 'Оффлайн'}</Badge>
+            <Badge variant="outline">
+              {finalLottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
+            </Badge>
+            <Badge variant="outline">
+              {finalLottery.format === 'online' ? 'Онлайн' : 'Оффлайн'}
+            </Badge>
           </HStack>
+
           <Text mb={3}>{finalLottery.description}</Text>
 
           <Text fontSize="sm" fontWeight="semibold" mb={1}>
-            Как это ложится на твой профиль:
+            Почему это подходит именно тебе:
           </Text>
           <Text fontSize="sm" mb={3}>
             {explainMatch(profile, finalLottery)}
@@ -873,32 +915,150 @@ export const Assistant: React.FC = () => {
           </Stack>
         </Box>
 
-        <Button variant="outline" onClick={handleRestart}>
+        <Button variant="outline" size="sm" alignSelf="flex-start" onClick={handleRestart}>
           Начать подбор заново
         </Button>
       </Stack>
     );
   };
 
-  // --- главный рендер ---
+  // -----------------------------
+  // Рендер страницы-чата
+  // -----------------------------
 
   return (
-    <Box minH="100vh" bg={pageBg} py={10} px={4}>
-      <Box maxW="5xl" mx="auto">
-        {phase === 'initial' && renderInitial()}
-        {phase === 'questionnaire' && (
-          <ProfileWizard onComplete={handleProfileComplete} onCancel={() => setPhase('initial')} />
-        )}
-        {phase === 'loading' && renderLoading()}
-        {phase === 'results' && renderResults()}
-        {phase === 'refine' && profile && bestLotteries.length > 0 && (
-          <RefineWizard
-            lotteries={bestLotteries}
-            profile={profile}
-            onComplete={handleFinalFromRefine}
-          />
-        )}
-        {phase === 'final' && renderFinal()}
+    <Box minH="100vh" bg={pageBg} py={6}>
+      <Box
+        maxW="5xl"
+        minH="90vh"
+        mx="auto"
+        bg={chatBg}
+        borderRadius="3xl"
+        borderWidth="1px"
+        borderColor={useColorModeValue('gray.200', 'gray.700')}
+        boxShadow="xl"
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+      >
+        {/* "хедер" чата */}
+        <Box
+          px={{ base: 4, md: 6 }}
+          py={3}
+          borderBottomWidth="1px"
+          borderColor={useColorModeValue('gray.200', 'gray.700')}
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Stack>
+            <Text fontSize="sm" fontWeight="semibold">
+              Лотерейный ассистент
+            </Text>
+            <Text fontSize="xs" color="gray.500">
+              Подберу лотерею под твой стиль игры
+            </Text>
+          </Stack>
+        </Box>
+
+        {/* Лента сообщений */}
+        <Box px={{ base: 3, md: 5 }} py={4} maxH="calc(100vh - 120px)" overflowY="auto">
+          <Stack>
+            {/* Приветствие — всегда первое сообщение */}
+            <ChatBubble role="assistant">
+              <Stack>
+                <Text>
+                  Привет! 👋 Я помогу разобраться с лотереями: сначала покажу быстрые варианты, а
+                  если не зайдут — настроим подбор под твой стиль игры.
+                </Text>
+                {phase === 'initial' && (
+                  <Text fontSize="sm" color="gray.300">
+                    Можешь сразу посмотреть варианты ниже или запустить умный подбор.
+                  </Text>
+                )}
+              </Stack>
+            </ChatBubble>
+
+            {phase === 'initial' && (
+              <ChatBubble role="assistant">
+                <QuickRecommendations />
+              </ChatBubble>
+            )}
+
+            {phase === 'questionnaire' && (
+              <>
+                <ChatBubble role="user">
+                  <Text fontSize="sm">Хочу настроить подбор под себя.</Text>
+                </ChatBubble>
+                <ChatBubble role="assistant">
+                  <ProfileWizard
+                    onComplete={handleProfileComplete}
+                    onCancel={() => setPhase('initial')}
+                  />
+                </ChatBubble>
+              </>
+            )}
+
+            {phase === 'loading' && (
+              <ChatBubble role="assistant">
+                <Box py={2}>
+                  <Center flexDirection="column">
+                    <Spinner size="md" color="blue.400" mb={3} />
+                    <Text fontSize="sm" color="gray.500" textAlign="center">
+                      Анализирую твои ответы и подбираю лучшие варианты…
+                    </Text>
+                  </Center>
+                </Box>
+              </ChatBubble>
+            )}
+
+            {phase === 'results' && (
+              <>
+                <ChatBubble role="user">
+                  <Text fontSize="sm">Готов увидеть рекомендации, что ты подобрал?</Text>
+                </ChatBubble>
+                <ChatBubble role="assistant">
+                  <ResultsBlock />
+                </ChatBubble>
+              </>
+            )}
+
+            {phase === 'refine' && profile && bestLotteries.length > 0 && (
+              <>
+                <ChatBubble role="user">
+                  <Text fontSize="sm">
+                    Давай уточним и выберем один лучший вариант из этих трёх.
+                  </Text>
+                </ChatBubble>
+                <ChatBubble role="assistant">
+                  <Stack>
+                    <Text fontSize="sm">
+                      Окей, ещё несколько уточняющих вопросов — и выберем один лучший вариант.
+                    </Text>
+                    <RefineWizard
+                      lotteries={bestLotteries}
+                      profile={profile}
+                      onComplete={handleFinalFromRefine}
+                    />
+                  </Stack>
+                </ChatBubble>
+              </>
+            )}
+
+            {phase === 'final' && finalLottery && (
+              <>
+                <ChatBubble role="user">
+                  <Text fontSize="sm">
+                    Хочу остановиться на одном варианте, покажи итоговую рекомендацию.
+                  </Text>
+                </ChatBubble>
+                <ChatBubble role="assistant">
+                  <FinalBlock />
+                </ChatBubble>
+              </>
+            )}
+          </Stack>
+        </Box>
       </Box>
     </Box>
   );
