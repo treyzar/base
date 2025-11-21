@@ -1,12 +1,25 @@
-import { Flex, HStack, Link, Text, Box } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Flex, HStack, Link, Box } from '@chakra-ui/react';
 import { ColorModeButton } from '@components/ui/color-mode';
+import { Image } from '@chakra-ui/react';
+import Logo from '@images/Logo.png';
 
 const Header = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const links = [
     { label: 'Главная', href: '#' },
     { label: 'О нас', href: '#' },
     { label: 'Контакты', href: '#' },
   ];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <Flex
@@ -14,24 +27,22 @@ const Header = () => {
       w="full"
       align="center"
       justify="space-between"
-      py={4}
+      py={1}
       px={8}
       borderBottomWidth="1px"
-      borderColor="border.muted" // Цвет границы из темы Chakra
-      bg="bg.panel" // Цвет фона (меняется автоматически в темной/светлой теме)
+      borderColor="border.muted"
+      bg="bg.panel"
+      backdropFilter={isScrolled ? 'blur(10px)' : 'none'}
+      opacity={isScrolled ? 0.7 : 1}
+      transition="all 0.3s"
       position="sticky"
       top={0}
       zIndex="sticky"
     >
-      {/* Слева: Логотип */}
       <Box>
-        <Text fontSize="xl" fontWeight="bold" letterSpacing="tight">
-          MyLogo
-        </Text>
+        <Image src={Logo} boxSize="50px"></Image>
       </Box>
 
-      {/* В центре: Ссылки */}
-      {/* Используем display={{ base: 'none', md: 'flex' }}, чтобы скрыть ссылки на мобильных, если нужно */}
       <HStack gap={8} display={{ base: 'none', md: 'flex' }}>
         {links.map((link) => (
           <Link
@@ -45,7 +56,6 @@ const Header = () => {
         ))}
       </HStack>
 
-      {/* Справа: Кнопка смены темы */}
       <Box>
         <ColorModeButton />
       </Box>
