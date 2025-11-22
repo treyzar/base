@@ -33,14 +33,14 @@ const AppBackground = ({ children }: { children: React.ReactNode }) => {
     >
       <Box position="absolute" inset="0" zIndex="0" overflow="hidden">
         <GlowingOrb
-          color="#7CF6E7"
+          color="#FFA500"
           size="700px"
           top="10%"
           left="-320px"
           opacity={0.3}
         />
         <GlowingOrb
-          color="#7CF6E7"
+          color="#FFA500"
           size="700px"
           bottom="10%"
           right="-320px"
@@ -48,14 +48,14 @@ const AppBackground = ({ children }: { children: React.ReactNode }) => {
         />
 
         <GlowingOrb
-          color="#F9B2F2"
+          color="#FF4D4D"
           size="700px"
           bottom="-320px"
           left="10%"
           opacity={0.3}
         />
         <GlowingOrb
-          color="#F9B2F2"
+          color="#FF4D4D"
           size="700px"
           top="-320px"
           right="10%"

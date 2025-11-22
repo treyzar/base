@@ -19,6 +19,7 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, './src/lib'),
       '@pages': path.resolve(__dirname, './src/pages'),
       '@router': path.resolve(__dirname, './src/router'),
+      '@images': path.resolve(__dirname, './src/lib/assets/images')
     },
   },
   server: {

@@ -33,7 +33,8 @@
       "@pages": ["./src/pages"],
       "@pages/*": ["./src/pages/*"],
       "@router": ["./src/router"],
-      "@router/*": ["./src/router/*"]
+      "@router/*": ["./src/router/*"],
+      "@images": ["./src/lib/assets/images"]
     }
   },
   "include": ["src"]
