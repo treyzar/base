@@ -25,19 +25,17 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Всё, что начинается с /stoloto, уходит на Go-сервер :8080
       '/stoloto': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        // /stoloto/draws/ -> /api/draws/
         rewrite: (path) => path.replace(/^\/stoloto/, '/api'),
       },
-      // Остальное API на твой основной backend :8090
       '/api': {
         target: 'http://localhost:8090',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

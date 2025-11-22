@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Flex, HStack, Link, Box } from '@chakra-ui/react';
 import { ColorModeButton } from '@components/ui/color-mode';
 import { Image } from '@chakra-ui/react';
-import { links } from '@lib';
 import logo from '@lib/assets/images/LogoHeader.svg';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const links = [
+    { label: 'Главная', href: '#' },
+    { label: 'О нас', href: '#' },
+    { label: 'Контакты', href: '#' },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {

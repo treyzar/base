@@ -51,6 +51,7 @@ export interface ChatBubbleProps {
 export interface ProfileWizardProps {
   onComplete: (profile: Profile) => void;
   onCancel: () => void;
+  onLotteriesChange: (lotteries: Lottery[]) => void;
 }
 
 export interface MicroAnswers {
@@ -140,3 +141,38 @@ export interface StolotoGamesResponse {
   requestStatus: string;
   errors: unknown[];
 }
+
+// src/lib/types/recommendation.ts
+
+// Полностью соответствует Go-структуре UniversalProps
+export interface UniversalProps {
+  name: string;
+  win_rate: number;
+  win_size: number;
+  frequency: number;
+  ticket_cost: number;
+}
+
+// Полностью соответствует Go-структуре UniversalPropsWithK
+export interface UniversalPropsWithK extends UniversalProps {
+  win_rate_k: number;
+  win_size_k: number;
+  frequency_k: number;
+  ticket_cost_k: number;
+}
+
+// Соответствует UniversalPropsWithCalcualtedDiffAndName
+export interface UniversalPropsWithCalculatedDiffAndName {
+  diff: number;
+  name: string;
+  universal_props: UniversalProps;
+}
+
+// Запрос к BestOfHandler
+export interface BestOfHandlerRequest {
+  universal_props_with_k: UniversalPropsWithK;
+  real_values: UniversalProps[];
+}
+
+// Ответ от BestOfHandler (slice UniversalPropsWithCalculatedDiffAndName)
+export type BestOfHandlerResponse = UniversalPropsWithCalculatedDiffAndName[];

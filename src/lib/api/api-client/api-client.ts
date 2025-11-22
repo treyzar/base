@@ -6,6 +6,7 @@ import axios, {
   AxiosError,
 } from 'axios';
 import { ApiError, UploadProgressCallback } from '@lib';
+import type { BestOfHandlerRequest, BestOfHandlerResponse } from '@lib';
 
 class ApiClient {
   private instance: AxiosInstance;
@@ -135,19 +136,25 @@ class StolotoApi {
   private client: ApiClient;
 
   constructor() {
-    // Браузер: http://localhost:5173 + /stoloto/...
-    // Vite proxy: /stoloto -> http://localhost:8080/api
+    // baseURL относительный, через Vite proxy уйдёт на Go
     this.client = new ApiClient('/stoloto');
   }
 
   // /stoloto/draws/ -> proxy -> http://localhost:8080/api/draws/
   getDraws<TResponse>() {
-    return this.client.get<TResponse>('draws/');
+    return this.client.get<TResponse>('draws/'); // БЕЗ ведущего слэша
   }
 
-  // /stoloto/draw/123 -> proxy -> http://localhost:8080/api/draw/123
-  getDraw<TResponse>(id: string | number) {
-    return this.client.get<TResponse>(`draw/${id}`);
+  // /stoloto/momental -> proxy -> http://localhost:8080/api/momental
+  getMomental<TResponse>() {
+    return this.client.get<TResponse>('draw/momental'); // БЕЗ ведущего слэша
+  }
+
+  // /stoloto/draw/latest?name=6x45 -> proxy -> http://localhost:8080/api/draw/latest?name=6x45
+  getDraw<TResponse>(name: string) {
+    return this.client.get<TResponse>('draw/latest', {
+      params: { name },
+    });
   }
 
   // /stoloto/draw/latest -> proxy -> http://localhost:8080/api/draw/latest
@@ -184,3 +191,21 @@ export const api = {
   upload: <TResponse>(url: string, formData: FormData, onUploadProgress?: UploadProgressCallback) =>
     apiClient.upload<TResponse>(url, formData, onUploadProgress),
 };
+
+// src/lib/api/client.ts
+class RecommendationApi {
+  private client: ApiClient;
+
+  constructor() {
+    // baseURL относительный, через Vite proxy уйдёт на :8090
+    this.client = new ApiClient('/api');
+  }
+
+  bestOf(payload: BestOfHandlerRequest): Promise<BestOfHandlerResponse> {
+    // ВАЖНО: без ведущего слэша!
+    return this.client.post<BestOfHandlerResponse, BestOfHandlerRequest>('best_of', payload);
+    // Итоговый URL для браузера: /api/best_of
+  }
+}
+
+export const recommendationApi = new RecommendationApi();

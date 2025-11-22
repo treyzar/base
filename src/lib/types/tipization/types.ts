@@ -23,3 +23,4 @@ export type DrawType = 'instant' | 'draw';
 export type FormatType = 'online' | 'offline';
 export type Profile = Record<Field, Answer>;
 export type MicroField = 'pricePriority' | 'riskFeeling' | 'playRhythm';
+export type PriceSegmentId = 'price_cheap' | 'price_mid' | 'price_expensive';

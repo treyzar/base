@@ -40,63 +40,6 @@ export const STEPS: StepConfig[] = [
   },
 ];
 
-export const MOCK_LOTTERIES: Lottery[] = [
-  {
-    id: '6x45',
-    name: 'Спортлото «6 из 45»',
-    minPrice: 100,
-    risk: 'medium',
-    drawType: 'draw',
-    format: 'online',
-    description: 'Классическая тиражная лотерея с понятными шансами и умеренным риском.',
-    features: ['Тиражный розыгрыш', 'Баланс риска и выигрыша', 'Подходит для регулярной игры'],
-  },
-  {
-    id: '4x20',
-    name: 'Спортлото «4 из 20»',
-    minPrice: 80,
-    risk: 'low',
-    drawType: 'draw',
-    format: 'online',
-    description: 'Невысокая стоимость билета и хорошие шансы на небольшие выигрыши.',
-    features: ['Невысокая цена', 'Частые выигрышные комбинации', 'Для осторожных игроков'],
-  },
-  {
-    id: 'ruslotto',
-    name: '«Русское лото»',
-    minPrice: 150,
-    risk: 'medium',
-    drawType: 'draw',
-    format: 'offline',
-    description: 'Классическая бочоночная лотерея, часто играют семьями по выходным тиражам.',
-    features: ['Семейная традиция', 'Телетрансляции тиражей', 'Крупные суперпризы'],
-  },
-  {
-    id: 'gzhl',
-    name: '«Жилищная лотерея»',
-    minPrice: 150,
-    risk: 'high',
-    drawType: 'draw',
-    format: 'online',
-    description: 'Шанс выиграть квартиру или крупные денежные призы.',
-    features: [
-      'Высокие призы',
-      'Более высокий риск',
-      'Подходит тем, кто готов ждать крупный выигрыш',
-    ],
-  },
-  {
-    id: 'instant-mini',
-    name: 'Моментальная «Мини-выигрыш»',
-    minPrice: 50,
-    risk: 'low',
-    drawType: 'instant',
-    format: 'online',
-    description: 'Моментальные результаты, маленькие, но частые выигрыши.',
-    features: ['Результат сразу', 'Низкий порог входа', 'Для лёгкого развлечения'],
-  },
-];
-
 export const MICRO_STEPS: MicroStep[] = [
   {
     field: 'pricePriority',

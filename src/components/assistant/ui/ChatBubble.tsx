@@ -1,4 +1,5 @@
-import type { ChatBubbleProps } from '@lib';
+import React from 'react';
+import type { ChatBubbleProps } from '@/lib';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { useBreakpointValue, Box } from '@chakra-ui/react';
 
@@ -7,12 +8,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ role, children }) => {
   const isUser = role === 'user';
 
   const bubbleBg = useColorModeValue(
-    isAssistant ? 'white' : isUser ? 'blue.500' : 'gray.100',
-    isAssistant ? 'gray.800' : isUser ? 'blue.400' : 'gray.700'
+    isAssistant ? 'white' : isUser ? 'orange.500' : 'gray.100',
+    isAssistant ? 'gray.800' : isUser ? 'orange.400' : 'gray.700'
   );
   const bubbleBorder = useColorModeValue(
-    isAssistant ? 'blue.100' : isUser ? 'blue.500' : 'gray.200',
-    isAssistant ? 'blue.600' : isUser ? 'blue.300' : 'gray.600'
+    isAssistant ? 'orange.100' : isUser ? 'orange.500' : 'gray.200',
+    isAssistant ? 'orange.600' : isUser ? 'orange.300' : 'gray.600'
   );
   const textColor = useColorModeValue(isUser ? 'white' : 'gray.900', 'white');
 
