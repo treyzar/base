@@ -19,14 +19,23 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, './src/lib'),
       '@pages': path.resolve(__dirname, './src/pages'),
       '@router': path.resolve(__dirname, './src/router'),
-      '@images': path.resolve(__dirname, './src/lib/assets/images')
+      '@images': path.resolve(__dirname, './src/lib/assets/images'),
     },
   },
   server: {
     port: 5173,
     proxy: {
+      // Всё, что начинается с /stoloto, уходит на Go-сервер :8080
       '/stoloto': {
-        target: 'https://www.stoloto.ru/p/api/mobile/api/v35/service/draws',
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        // /stoloto/draws/ -> /api/draws/
+        rewrite: (path) => path.replace(/^\/stoloto/, '/api'),
+      },
+      // Остальное API на твой основной backend :8090
+      '/api': {
+        target: 'http://localhost:8090',
         changeOrigin: true,
         secure: false,
       },

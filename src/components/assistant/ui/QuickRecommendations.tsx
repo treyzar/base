@@ -1,7 +1,6 @@
 // src/components/assistant/ui/QuickRecommendations.tsx
-import React, { useMemo, useState, useEffect } from 'react';
+import React from 'react';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { getInitialLotteries } from '@/lib';
 import {
   Stack,
   Heading,
@@ -12,32 +11,26 @@ import {
   Badge,
   Button,
   Spinner,
-  Center,
 } from '@chakra-ui/react';
+import type { Lottery } from '@lib';
 
 interface QuickRecommendationsProps {
   hasStartedQuestionnaire: boolean;
-  setHasStartedQuestionnaire: (hasStartedQuestionnaire: boolean) => void;
+  setHasStartedQuestionnaire: (value: boolean) => void;
+  lotteries: Lottery[];
+  isLoading: boolean;
+  error?: string | null;
 }
 
 export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
   hasStartedQuestionnaire,
   setHasStartedQuestionnaire,
+  lotteries,
+  isLoading,
+  error,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  const initialLotteries = useMemo(() => getInitialLotteries(), []);
   const cardBg = useColorModeValue('white', 'gray.900');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
-
-  useEffect(() => {
-    // симулируем загрузку данных от ассистента
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleStartQuestionnaire = () => {
     if (!hasStartedQuestionnaire) {
@@ -47,16 +40,49 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
 
   if (isLoading) {
     return (
+      <Stack align="center" py={2}>
+        <Spinner size="sm" color="blue.400" />
+        <Text fontSize="sm" color="gray.500">
+          Подгружаю актуальные лотереи…
+        </Text>
+      </Stack>
+    );
+  }
+
+  if (error) {
+    return (
       <Stack>
-        <Heading size="sm">Смотрю, с чего лучше начать…</Heading>
-        <Box py={2}>
-          <Center flexDirection="column">
-            <Spinner size="md" color="blue.400" mb={3} />
-            <Text fontSize="sm" color="gray.500" textAlign="center">
-              Собираю несколько стартовых вариантов лотерей.
-            </Text>
-          </Center>
-        </Box>
+        <Heading size="sm">Сейчас не получается подгрузить быстрые варианты</Heading>
+        <Text fontSize="sm" color="red.400">
+          {error}
+        </Text>
+        <Button
+          colorScheme="blue"
+          size="sm"
+          onClick={handleStartQuestionnaire}
+          alignSelf="flex-end"
+        >
+          Подобрать под меня
+        </Button>
+      </Stack>
+    );
+  }
+
+  if (!lotteries || lotteries.length === 0) {
+    return (
+      <Stack>
+        <Heading size="sm">Пока нет быстрых вариантов</Heading>
+        <Text fontSize="sm" color="gray.500">
+          Давай сразу перейдём к умному подбору.
+        </Text>
+        <Button
+          colorScheme="blue"
+          size="sm"
+          onClick={handleStartQuestionnaire}
+          alignSelf="flex-end"
+        >
+          Настроить под себя
+        </Button>
       </Stack>
     );
   }
@@ -65,7 +91,7 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
     <Stack>
       <Heading size="sm">Я нашёл несколько вариантов, с которых можно начать 👇</Heading>
       <SimpleGrid columns={{ base: 1, md: 3 }} gap="10px">
-        {initialLotteries.map((lottery) => (
+        {lotteries.map((lottery) => (
           <Box
             key={lottery.id}
             borderWidth="1px"

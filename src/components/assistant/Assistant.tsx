@@ -1,8 +1,17 @@
 // src/components/assistant/Assistant.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Text, Stack, HStack, Badge, Spinner, Center } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
-import { type Profile, type Lottery, pageBg, chatBg, scoreLottery, MOCK_LOTTERIES } from '@/lib';
+import {
+  type Profile,
+  type Lottery,
+  type StolotoGame,
+  pageBg,
+  chatBg,
+  scoreLottery,
+  stolotoApi,
+  mapStolotoGamesToLotteries,
+} from '@/lib';
 
 import { ChatBubble } from '@/components/assistant/ui/ChatBubble';
 import { ProfileWizard } from '@/components/assistant/ui/ProfileWizard';
@@ -26,8 +35,63 @@ export const Assistant: React.FC = () => {
   const [hasFinal, setHasFinal] = useState(false);
   const [isLoadingFinal, setIsLoadingFinal] = useState(false);
 
+  const [stolotoGames, setStolotoGames] = useState<StolotoGame[]>([]);
+  const [isStolotoLoading, setIsStolotoLoading] = useState(false);
+  const [stolotoError, setStolotoError] = useState<string | null>(null);
+
   const messagesRef = useRef<HTMLDivElement | null>(null);
 
+  // === Загрузка игр Stoloto ===
+  useEffect(() => {
+    const fetchDraws = async () => {
+      try {
+        setIsStolotoLoading(true);
+        setStolotoError(null);
+
+        const response = await stolotoApi.getDraws<{
+          games: StolotoGame[];
+          walletActive: boolean;
+          paymentsActive: boolean;
+          guestShufflerTicketsEnabled: boolean;
+          requestStatus: string;
+          errors: unknown[];
+        }>();
+
+        console.log('Stoloto response:', response);
+
+        if (response.requestStatus !== 'success') {
+          setStolotoError('Не удалось получить данные Stoloto');
+          setStolotoGames([]);
+          return;
+        }
+
+        setStolotoGames(response.games);
+      } catch (error) {
+        console.error('Ошибка при запросе Stoloto:', error);
+        setStolotoError('Ошибка при запросе Stoloto');
+        setStolotoGames([]);
+      } finally {
+        setIsStolotoLoading(false);
+      }
+    };
+
+    fetchDraws();
+  }, []);
+
+  // === Преобразование в Lottery ===
+  const stolotoLotteries: Lottery[] = useMemo(() => {
+    if (!stolotoGames || stolotoGames.length === 0) return [];
+    return mapStolotoGamesToLotteries(stolotoGames);
+  }, [stolotoGames]);
+
+  // === Быстрые рекомендации (подсечка из списка) ===
+  const quickLotteries: Lottery[] = useMemo(() => {
+    if (stolotoLotteries.length === 0) return [];
+    // можно выбрать, например, первые 6
+    return stolotoLotteries.slice(0, 6);
+  }, [stolotoLotteries]);
+
+  // === Автоскролл ===
   useEffect(() => {
     if (!messagesRef.current) return;
     messagesRef.current.scrollTo({
@@ -44,6 +108,7 @@ export const Assistant: React.FC = () => {
     isRefineIntroLoading,
     profile,
     bestLotteries.length,
+    stolotoLotteries.length,
   ]);
 
   const isInitial =
@@ -54,10 +119,19 @@ export const Assistant: React.FC = () => {
     !hasFinal &&
     !isRefineIntroLoading;
 
+  // === Завершение анкеты профиля ===
   const handleProfileComplete = (p: Profile) => {
     setProfile(p);
 
-    const scored = [...MOCK_LOTTERIES]
+    const sourceLotteries = stolotoLotteries;
+
+    if (sourceLotteries.length === 0) {
+      setBestLotteries([]);
+      setHasResults(false);
+      return;
+    }
+
+    const scored = [...sourceLotteries]
       .map((lottery) => ({
         lottery,
         score: scoreLottery(p, lottery),
@@ -74,7 +148,7 @@ export const Assistant: React.FC = () => {
     }, 800);
   };
 
-  // симуляция «ассистент думает», перед показом RefineWizard
+  // === Переход к уточняющим вопросам ===
   const handleGoRefine = () => {
     if (hasRefine || isRefineIntroLoading || !profile || bestLotteries.length === 0) return;
     setIsRefineIntroLoading(true);
@@ -177,11 +251,14 @@ export const Assistant: React.FC = () => {
               </Stack>
             </ChatBubble>
 
-            {/* Быстрые рекомендации с собственной симуляцией загрузки внутри */}
+            {/* Быстрые рекомендации ИСКЛЮЧИТЕЛЬНО из Stoloto */}
             <ChatBubble role="assistant">
               <QuickRecommendations
                 hasStartedQuestionnaire={hasStartedQuestionnaire}
                 setHasStartedQuestionnaire={setHasStartedQuestionnaire}
+                lotteries={quickLotteries}
+                isLoading={isStolotoLoading}
+                error={stolotoError}
               />
             </ChatBubble>
 
@@ -234,7 +311,6 @@ export const Assistant: React.FC = () => {
               </>
             )}
 
-            {/* Загрузка перед уточняющими вопросами */}
             {isRefineIntroLoading && (
               <ChatBubble role="assistant">
                 <Box py={2}>

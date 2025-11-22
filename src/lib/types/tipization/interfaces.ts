@@ -97,3 +97,46 @@ export interface FinalBlockProps {
 export interface LayoutProps {
   children: React.ReactNode;
 }
+
+// src/lib/types/tipization/types.ts
+
+export interface StolotoDraw {
+  id: number;
+  number: number;
+  date: number; // unix timestamp (секунды)
+  superPrize: number;
+  jackpots?: unknown[];
+}
+
+export interface StolotoCompletedDraw {
+  number: number;
+  date: number; // unix timestamp
+  totalPrize: number;
+  superPrize: number;
+  combination: Record<string, unknown>;
+}
+
+export interface StolotoGame {
+  name: string;
+  active: boolean;
+  combinationsSelector: unknown[];
+  mainCombinationsSelector: unknown[];
+  maxBetSize: number;
+  maxTicketCost: number;
+  maxTicketCostVip: number;
+  voice: string;
+  yandexActive: boolean;
+  yandexYookassacard: boolean;
+  draw: StolotoDraw;
+  completedDraw: StolotoCompletedDraw;
+  nextDraw?: StolotoDraw;
+}
+
+export interface StolotoGamesResponse {
+  games: StolotoGame[];
+  walletActive: boolean;
+  paymentsActive: boolean;
+  guestShufflerTicketsEnabled: boolean;
+  requestStatus: string;
+  errors: unknown[];
+}

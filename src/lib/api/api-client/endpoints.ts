@@ -37,17 +37,3 @@
 //   users: userApi,
 // };
 import { api } from './api-client';
-
-export const lotteryApi = {
-  get: () => {
-    return api.get('/stoloto/zabava/158996', {
-      headers: {
-        'Gosloto-Partner': 'bXMjXFRXZ3coWXh6R3s1NTdUX3dnWlBMLUxmdg',
-      },
-    });
-  },
-};
-
-export const endpoints = {
-  lottery: lotteryApi,
-};
