@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Flex, HStack, Link, Box } from '@chakra-ui/react';
 import { ColorModeButton } from '@components/ui/color-mode';
 import { Image } from '@chakra-ui/react';
@@ -6,16 +5,6 @@ import { links } from '@lib';
 import logo from '@lib/assets/images/LogoHeader.svg';
 
 const Header = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <Flex
       as="header"
@@ -27,11 +16,11 @@ const Header = () => {
       borderBottomWidth="1px"
       borderColor="border.muted"
       bg="transparent"
-      backdropFilter={isScrolled ? 'blur(10px)' : 'none'}
+      backdropFilter="blur(10px)"
       transition="all 0.3s"
-      position="sticky"
+      position="fixed" // Ключевое изменение: Фиксируем хедер на экране
       top={0}
-      zIndex="sticky"
+      zIndex={100} // Гарантируем, что хедер поверх всего
     >
       <Box>
         <Link key="main" href="/">

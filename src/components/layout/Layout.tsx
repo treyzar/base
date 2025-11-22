@@ -10,7 +10,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <AppBackground>
       <Flex direction="column" minH="100vh">
         <Header />
-        <Box as="main" flex="1" display="flex" flexDirection="column" overflow="hidden">
+        <Box as="main" flex="1" display="flex" flexDirection="column" pt="60px">
           {children}
         </Box>
         <Footer />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Flex, Image } from '@chakra-ui/react';
 import { Assistant } from '@/components/assistant/Assistant'; 
 import { useColorModeValue } from '@/components/ui/color-mode'; 
@@ -6,27 +6,47 @@ import AiratOnBarrel from "@lib/assets/images/AiratOnBarrel.png";
 
 const AssistantPage: React.FC = () => {
   const textColor = useColorModeValue('black', 'white');
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const sidebarGradient = useColorModeValue(
     "linear(to-br, purple.600, blue.600, teal.400)",
     "linear(to-br, gray.800, gray.700, gray.600)" 
   );
 
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+
+    const observer = new MutationObserver(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+
+    observer.observe(chatContainerRef.current, {
+      childList: true,
+      subtree: true, 
+      characterData: true
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Flex
-      h="100%" 
       w="100%"     
       bg="transparent"
       p={{ base: 0, lg: 6 }}
-      overflow="hidden"
       flex="1"
+      align="flex-start"
     >
       <Flex
         w="100%"
-        h="100%"
+        minH={{ base: 'auto', lg: '80vh' }}
         bg="transparent" 
         borderRadius={{ base: '0', lg: '3xl' }}
-        overflow="hidden" 
+        overflow="hidden"
+        flexDirection={{ base: 'column', lg: 'row' }}
       >
         <Box
           w={{ base: '0', lg: '20%', xl: '18%' }}
@@ -36,6 +56,7 @@ const AssistantPage: React.FC = () => {
           flexDirection="column"
           color={textColor}
           overflow="hidden"
+          minH="full"
         >
           <Box
             position="absolute"
@@ -52,39 +73,36 @@ const AssistantPage: React.FC = () => {
             p={8} 
             mt={10} 
             zIndex={1}
+            flexGrow={1}
           >
-            <Box 
-              w="full" 
-              h="200px"
-            />
+            <Box w="full" h="200px" />
           </Box>
 
           <Box
-            position="absolute"
-            // Изменено: Устанавливаем bottom в 0, чтобы убрать отступ, но оставить обрезку 
-            // (обрезано будет то, что ниже 0 из-за overflow: hidden родительского блока)
+            position="sticky"
             bottom="0" 
-            left="50%"
-            transform="translateX(-50%)"
-            w="90%"
-            maxW="300px"
+            w="full"
+            display="flex"
+            justifyContent="center"
             zIndex={0}
+            pb={0}
           >
-            <Image 
-              src={AiratOnBarrel} 
-              w="100%" 
-              h="auto" 
-              objectFit="contain"
-            />
+            <Box w="90%" maxW="300px">
+                <Image 
+                  src={AiratOnBarrel} 
+                  w="100%" 
+                  h="auto" 
+                  objectFit="contain"
+                />
+            </Box>
           </Box>
         </Box>
 
         <Box 
           flex="1" 
-          h="100%"
           bg="transparent" 
           position="relative"
-          // Откат: Удален добавленный ранее pb, чтобы вернуться к исходному состоянию Assistant
+          ref={chatContainerRef}
         >
           <Assistant />
         </Box>
