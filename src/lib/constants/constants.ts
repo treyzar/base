@@ -79,4 +79,5 @@ export const links = [
   { label: 'Чат бот', href: '/' },
   { label: 'Столото', href: 'https://www.stoloto.ru' },
   { label: 'Лотереи', href: '/lotteries' },
+  { label: 'Метрики', href: '/analytics' },
 ];

@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { AssistantPage, NotFoundPage } from '@pages';
 import LotteriesPage from '@/pages/lotteries/LotteriesPage';
+import AnalyticsDashboard from '@/pages/analytics/AnalyticsDashboard';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -22,6 +23,14 @@ export const AppRouter: React.FC = () => {
           element={
             <Layout>
               <LotteriesPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <Layout>
+              <AnalyticsDashboard />
             </Layout>
           }
         />
