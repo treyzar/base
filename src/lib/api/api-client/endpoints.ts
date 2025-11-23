@@ -37,3 +37,9 @@
 //   users: userApi,
 // };
 import { api } from './api-client';
+
+const recApi = {
+  postForm: () => {
+    api.post;
+  },
+};

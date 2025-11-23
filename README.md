@@ -1,75 +1,171 @@
-# React + TypeScript + Vite
+🎰 Stoloto Assistant — Analytics Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Страница аналитики для проекта «Лотерейный ассистент»
 
-Currently, two official plugins are available:
+📌 Описание проекта
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+AnalyticsDashboard — это отдельная аналитическая страница внутри проекта «Лотерейный ассистент».
+Она показывает ключевые метрики по лотереям, которые используются в рекомендационной модели:
 
-## React Compiler
+распределение по ценовым сегментам,
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+динамика модельной вероятности выигрыша,
 
-Note: This will impact Vite dev & build performances.
+распределение активных лотерей,
 
-## Expanding the ESLint configuration
+агрегированные показатели стоимости билетов, рисков и пр.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Страница сделана в визуальном стиле «Столото»:
+тёмная цветовая палитра, красный акцент, яркие графики, структурированные блоки.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+🧱 Технологии
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Используемый стек для страницы:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+React 18
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+TypeScript
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Chakra UI — оформление элементов и адаптивная сетка
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Recharts — графики
+
+Stoloto API + собственные мапперы — данные для моделей
+
+Собственные хелперы нормализации (цены, win rate, drawType и др.)
+
+📊 Функциональные блоки AnalyticsDashboard
+
+1. Hero-блок
+
+Красная полоса с заголовком:
+«Глубина и качество анализа данных».
+
+Содержит:
+
+цель страницы,
+
+краткое объяснение источников данных,
+
+что именно анализируется.
+
+2. Key Metrics — верхняя строка показателей
+
+Каждая метрика — в виде карточки Chakra:
+
+Средняя цена билета
+
+Модельная вероятность выигрыша
+
+Количество активных лотерей
+
+Доп. текстовые уточнения (рост/падение)
+
+Стиль полностью адаптирован под Stoloto.
+
+3. График динамики Win Rate
+
+Используются данные:
+
+const winRateData = [
+{ name: 'Янв', winRate: 31 },
+{ name: 'Фев', winRate: 34 },
+{ name: 'Мар', winRate: 36 },
+{ name: 'Апр', winRate: 37 },
+{ name: 'Май', winRate: 39 },
+{ name: 'Июн', winRate: 41 },
+];
+
+Отрисовка через LineChart:
+
+мягкая линия #FFD600
+
+тёмная сетка #333333
+
+всплывающее окно в тёмной теме
+
+читаемая Y-шкала в %
+
+4. Распределение лотерей по ценовым сегментам
+
+Используется бар-чарт (BarChart).
+
+Ты ранее давал реальные данные о ценах:
+до 100 ₽, 100–500 ₽, 500–1500 ₽.
+
+Это используется для:
+
+нормализации ticket_cost в модели UniversalProps
+
+построения динамических ценовых сегментов (price_cheap, price_mid, price_expensive)
+
+5. Методология расчёта
+
+Отдельный блок, который включает:
+
+источники данных (официальные эндпоинты Stoloto)
+
+историю тиражей
+
+суперпризы
+
+нормализацию стоимости
+
+унификацию вероятности выигрыша
+
+формирование агрегированных метрик
+
+🧮 Как используется аналитика
+
+Эти данные автоматически прокидываются в рекомендательную модель ассистента:
+
+ticket_cost → normalize(minPrice, maxPrice)
+win_rate → mapRiskToBaseWinRate()
+frequency → deriveFrom(drawType)
+win_size → mapRiskToBaseWinSize()
+
+А затем отправляются в /best_of, где Go-модель сравнивает профиль пользователя с реальными UniversalProps.
+
+📂 Структура файла
+src/pages/AnalyticsDashboard.tsx
+├── hero
+├── cards (Key Metrics)
+├── charts
+│ ├── winRate (LineChart)
+│ └── priceSegments (BarChart)
+└── methodology
+
+🚀 Как открыть страницу
+
+Убедись, что проект запущен:
+
+npm run dev
+
+Перейди по адресу:
+
+http://localhost:8090/analytics
+
+(если у тебя настроен React Router)
+
+🎨 Используемые цвета (Stoloto-style)
+Назначение Цвет
+Hero #e42532
+Текст hero #ffffff
+Фон карточек #1b1b1b
+Бордер карточек #333333
+Основной текст #ffffff
+Жёлтый акцент #FFD600
+Оранжевые бары #FFB400
+📘 Планы развития
+
+Подключение реальных данных с back-end (Stoloto API + history endpoint)
+
+Динамические тренды за неделю/месяц
+
+Фильтры по риску, цене, drawType
+
+Heatmap по суперпризам
+
+Таблица тиражей с пагинацией
+
+Интеграция с ассистентом (персонализированная аналитика)

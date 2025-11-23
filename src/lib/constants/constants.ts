@@ -73,10 +73,11 @@ export const MICRO_STEPS: MicroStep[] = [
 export const pageBg = () =>
   useColorModeValue('linear(to-b, gray.50, gray.100)', 'linear(to-b, gray.900, gray.800)');
 
-export const chatBg = () => useColorModeValue('gray.50', 'gray.850');
+export const chatBg = () => useColorModeValue('gray.55', 'gray.850');
 
 export const links = [
   { label: 'Чат бот', href: '/' },
   { label: 'Столото', href: 'https://www.stoloto.ru' },
   { label: 'Лотереи', href: '/lotteries' },
+  { label: 'Метрики', href: '/analytics' },
 ];
