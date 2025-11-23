@@ -47,7 +47,7 @@ export const MICRO_STEPS: MicroStep[] = [
     options: [
       { value: 'economy', label: 'Минимальный чек — главное, хочу играть подешевле' },
       { value: 'balance', label: 'Баланс: не самое дешёвое, но и не дорого' },
-      { value: 'dontcare', label: 'Цена не так важна, главное впечатления' },
+      { value: 'premium', label: 'Цена не так важна, главное впечатления' },
     ],
   },
   {
@@ -76,6 +76,7 @@ export const pageBg = () =>
 export const chatBg = () => useColorModeValue('gray.50', 'gray.850');
 
 export const links = [
-  { label: 'Чат бот', href: '/assistant' },
+  { label: 'Чат бот', href: '/' },
   { label: 'Столото', href: 'https://www.stoloto.ru' },
+  { label: 'Лотереи', href: '/lotteries' },
 ];

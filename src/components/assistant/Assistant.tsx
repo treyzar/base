@@ -1,6 +1,6 @@
 // src/components/assistant/Assistant.tsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Box, Text, Stack, HStack, Badge, Spinner, Center } from '@chakra-ui/react';
+import { Box, Text, Stack, HStack, Badge, Spinner, Center, Button } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import {
   type Profile,
@@ -21,6 +21,204 @@ import { QuickRecommendations } from '@/components/assistant/ui/QuickRecommendat
 import { ResultsBlock } from '@/components/assistant/ui/ResultBlock';
 import { RefineWizard, type RefineWeights } from '@/components/assistant/ui/RefineWizard';
 import { FinalBlock } from '@/components/assistant/ui/FinalBlock';
+import { createPortal } from 'react-dom';
+
+// ===================== COOKIE-ХЕЛПЕРЫ ДЛЯ СЧЁТЧИКА ВИЗИТОВ =====================
+
+const VISIT_COOKIE_NAME = 'assistant_visit_count';
+
+const getVisitCountFromCookie = (): number => {
+  if (typeof document === 'undefined') {
+    return 0;
+  }
+
+  const cookieString = document.cookie || '';
+  const cookies = cookieString.split(';').map((c) => c.trim());
+
+  for (const cookie of cookies) {
+    if (cookie.startsWith(`${VISIT_COOKIE_NAME}=`)) {
+      const value = cookie.substring(VISIT_COOKIE_NAME.length + 1);
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        return parsed;
+      }
+      return 0;
+    }
+  }
+
+  return 0;
+};
+
+const setVisitCountCookie = (count: number): void => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const safeCount = Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0;
+  const maxAge = 60 * 60 * 24 * 365; // 1 год
+  document.cookie = `${VISIT_COOKIE_NAME}=${safeCount}; path=/; max-age=${maxAge}`;
+};
+
+// ===================== ОНБОРДИНГ-МОДАЛКА (ТОЛЬКО КАРТОЧКА С ТЕКСТОМ) =====================
+
+interface OnboardingStepInfo {
+  id: string;
+  title: string;
+  text: string;
+}
+
+interface OnboardingModalProps {
+  isOpen: boolean;
+  step: OnboardingStepInfo | null;
+  totalSteps: number;
+  stepIndex: number;
+  onSkip: () => void;
+}
+
+const OnboardingModal: React.FC<OnboardingModalProps> = ({
+  isOpen,
+  step,
+  totalSteps,
+  stepIndex,
+  onSkip,
+}) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+  }, [isOpen]);
+
+  if (!isOpen || !step || typeof document === 'undefined') {
+    return null;
+  }
+
+  const modalNode = (
+    <Box
+      position="fixed"
+      inset={0}
+      bg="rgba(0, 0, 0, 0.7)"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      zIndex={1400}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onSkip();
+        }
+      }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.22s ease-out',
+      }}
+    >
+      <Box
+        bg="#050505"
+        color="#FFFFFF"
+        borderRadius="28px"
+        borderWidth="1px"
+        borderColor="#FFD600"
+        maxW="520px"
+        w="90%"
+        px={7}
+        py={6}
+        boxShadow="0 24px 80px rgba(0, 0, 0, 0.85)"
+        position="relative"
+        style={{
+          transform: visible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'transform 0.22s ease-out',
+          fontFamily:
+            "'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        }}
+      >
+        <Button
+          onClick={onSkip}
+          size="xs"
+          variant="ghost"
+          bg="transparent"
+          _hover={{ bg: 'rgba(255, 255, 255, 0.06)' }}
+          borderRadius="full"
+          position="absolute"
+          top="10px"
+          right="10px"
+          minW="24px"
+          h="24px"
+          p={0}
+        >
+          ✕
+        </Button>
+
+        <HStack justifyContent="space-between" alignItems="center" mb={3}>
+          <HStack alignItems="center">
+            <Box
+              w="40px"
+              h="40px"
+              borderRadius="full"
+              bgGradient="linear(to-br, #FFD600, #FFA500)"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              fontSize="22px"
+            >
+              👀
+            </Box>
+            <Box>
+              <Text fontSize="xl" fontWeight="bold" color="#FFD600">
+                {step.title}
+              </Text>
+              <Text fontSize="xs" color="#CCCCCC">
+                Шаг {stepIndex + 1} из {totalSteps}
+              </Text>
+            </Box>
+          </HStack>
+
+          <HStack justifyContent="flex-end">
+            {Array.from({ length: totalSteps }).map((_, idx) => (
+              <Box
+                key={idx}
+                w={idx === stepIndex ? '20px' : '8px'}
+                h="8px"
+                borderRadius="999px"
+                bg={idx === stepIndex ? '#FFD600' : '#555555'}
+                transition="all 0.18s ease-out"
+              />
+            ))}
+          </HStack>
+        </HStack>
+
+        <Stack>
+          <Text fontSize="lg" lineHeight="1.5">
+            {step.text}
+          </Text>
+
+          <Text fontSize="xs" color="#AAAAAA" mt={2}>
+            Блок, про который я сейчас рассказываю, подсвечен в интерфейсе на странице.
+          </Text>
+
+          <HStack justifyContent="flex-end" mt={4}>
+            <Button
+              size="sm"
+              variant="ghost"
+              borderRadius="full"
+              color="#CCCCCC"
+              onClick={onSkip}
+              fontSize="sm"
+            >
+              Пропустить подсказки
+            </Button>
+          </HStack>
+        </Stack>
+      </Box>
+    </Box>
+  );
+
+  return createPortal(modalNode, document.body);
+};
+
+// ===================== ТИПЫ ОТ STOLOTO =====================
 
 type StolotoDrawsResponse = {
   games: StolotoGame[];
@@ -31,16 +229,18 @@ type StolotoDrawsResponse = {
   errors: unknown[];
 };
 
+// ===================== ОСНОВНОЙ КОМПОНЕНТ ASSISTANT =====================
+
 export const Assistant: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  // Полный список лотерей, с которыми работаем после первой анкеты
+  // Полный список лотерей после первой анкеты
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
 
-  // Список лучших лотерей из /best_of ПОСЛЕ ПЕРВОЙ АНКЕТЫ (ограниченный массив длиной 4)
+  // Лучшие лотереи из /best_of (после первой анкеты)
   const [bestLotteries, setBestLotteries] = useState<Lottery[]>([]);
 
-  // Финальная лотерея после второй анкеты — ровно одна
+  // Финальная лотерея после второй анкеты
   const [finalLottery, setFinalLottery] = useState<Lottery | null>(null);
 
   const [hasStartedQuestionnaire, setHasStartedQuestionnaire] = useState(false);
@@ -53,14 +253,22 @@ export const Assistant: React.FC = () => {
   const [hasFinal, setHasFinal] = useState(false);
   const [isLoadingFinal, setIsLoadingFinal] = useState(false);
 
-  // Быстрые рекомендации по Stoloto
+  // Stoloto для быстрых рекомендаций
   const [stolotoGames, setStolotoGames] = useState<StolotoGame[]>([]);
   const [isStolotoLoading, setIsStolotoLoading] = useState(false);
   const [stolotoError, setStolotoError] = useState<string | null>(null);
 
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const assistantRootRef = useRef<HTMLDivElement | null>(null);
+  const quickBlockRef = useRef<HTMLDivElement | null>(null);
+  const wizardBlockRef = useRef<HTMLDivElement | null>(null);
 
-  // === Визуальные токены для контейнера ассистента ===
+  // Счётчик визитов и состояние онбординга
+  const [visitCount, setVisitCount] = useState(0);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [onboardingStepIndex, setOnboardingStepIndex] = useState<number | null>(null);
+
+  // Визуальные токены
   const chatSurfaceBg = useColorModeValue('rgba(255, 255, 255, 0.5)', 'rgba(0, 0, 0, 0.5)');
   const borderColor = useColorModeValue('gray.400', 'black');
   const textColor = useColorModeValue('#000000', '#FFFFFF');
@@ -71,7 +279,110 @@ export const Assistant: React.FC = () => {
   const spinnerColorFinal = '#671600';
   const containerShadow = useColorModeValue('none', '0px 0px 10px rgba(255, 255, 255, 0.2)');
 
-  // === Загрузка игр Stoloto для быстрых рекомендаций (QuickRecommendations) ===
+  // Конфиг шагов онбординга (короткие, по одному предложению)
+  const ONBOARDING_STEPS: OnboardingStepInfo[] = [
+    {
+      id: 'intro',
+      title: 'Главный блок ассистента',
+      text: 'Это основной блок ассистента, где мы будем переписываться и показывать подбор лотерей.',
+    },
+    {
+      id: 'quick',
+      title: 'Быстрые варианты',
+      text: 'Здесь ассистент сразу показывает несколько готовых вариантов лотерей, с которых удобно начать.',
+    },
+    {
+      id: 'start_button',
+      title: 'Запуск умного подбора',
+      text: 'Под карточками есть кнопка, которая запускает умный подбор лотерей по твоим ответам.',
+    },
+    {
+      id: 'options',
+      title: 'Варианты ответов в анкете',
+      text: 'На каждом шаге анкеты ты видишь несколько крупных кнопок и выбираешь тот ответ, который ближе к тебе.',
+    },
+    {
+      id: 'win_rate',
+      title: 'Ползунок частоты выигрышей',
+      text: 'Этот ползунок задаёт, как часто ты примерно хочешь выигрывать — просто подвигай его до комфортного значения.',
+    },
+    {
+      id: 'win_size',
+      title: 'Ползунок размера выигрыша',
+      text: 'А этот ползунок задаёт примерный размер выигрышa, который тебя устраивает, — от меньших к более крупным суммам.',
+    },
+  ];
+
+  const currentOnboardingStep =
+    onboardingStepIndex !== null ? ONBOARDING_STEPS[onboardingStepIndex] : null;
+  const currentStepId = currentOnboardingStep?.id ?? null;
+
+  // Инициализация счётчика визитов и автозапуск онбординга при первом заходе
+  useEffect(() => {
+    const current = getVisitCountFromCookie();
+    setVisitCount(current);
+    setVisitCountCookie(current + 1);
+
+    if (current === 0) {
+      setIsOnboardingOpen(true);
+      setOnboardingStepIndex(0);
+    }
+  }, []);
+
+  // Автоматическая смена шагов онбординга каждые 5 секунд
+  useEffect(() => {
+    if (!isOnboardingOpen || onboardingStepIndex === null) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (onboardingStepIndex < ONBOARDING_STEPS.length - 1) {
+        setOnboardingStepIndex(onboardingStepIndex + 1);
+      } else {
+        setIsOnboardingOpen(false);
+        setOnboardingStepIndex(null);
+      }
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isOnboardingOpen, onboardingStepIndex, ONBOARDING_STEPS.length]);
+
+  // Скролл к нужному блоку, когда меняется шаг онбординга
+  useEffect(() => {
+    if (!isOnboardingOpen || !currentStepId) {
+      return;
+    }
+
+    let targetElement: HTMLDivElement | null = null;
+
+    if (currentStepId === 'intro') {
+      targetElement = assistantRootRef.current;
+    } else if (currentStepId === 'quick' || currentStepId === 'start_button') {
+      targetElement = quickBlockRef.current;
+    } else if (
+      currentStepId === 'options' ||
+      currentStepId === 'win_rate' ||
+      currentStepId === 'win_size'
+    ) {
+      targetElement = wizardBlockRef.current;
+    }
+
+    if (targetElement && messagesRef.current) {
+      const parent = messagesRef.current;
+      const parentRect = parent.getBoundingClientRect();
+      const elRect = targetElement.getBoundingClientRect();
+      const offset = elRect.top - parentRect.top - parent.clientHeight / 2 + elRect.height / 2;
+
+      parent.scrollTo({
+        top: parent.scrollTop + offset,
+        behavior: 'smooth',
+      });
+    }
+  }, [isOnboardingOpen, currentStepId]);
+
+  // Загрузка игр Stoloto
   const fetchDraws = useCallback(async (): Promise<void> => {
     setIsStolotoLoading(true);
     setStolotoError(null);
@@ -110,7 +421,7 @@ export const Assistant: React.FC = () => {
     return stolotoLotteries.slice(0, 6);
   }, [stolotoLotteries]);
 
-  // Автоскролл
+  // Автоскролл в конец при изменениях
   useEffect(() => {
     if (!messagesRef.current) return;
     messagesRef.current.scrollTo({
@@ -159,7 +470,7 @@ export const Assistant: React.FC = () => {
     if (maxPrice <= minPrice) {
       return 0.5;
     }
-    return (price - minPrice) / (maxPrice - minPrice); // 0..1
+    return (price - minPrice) / (maxPrice - minPrice);
   };
 
   const getDeterministicHash01 = (id: string): number => {
@@ -167,7 +478,7 @@ export const Assistant: React.FC = () => {
     for (let i = 0; i < id.length; i += 1) {
       hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
     }
-    return (hash % 1000) / 1000; // 0.000 .. 0.999
+    return (hash % 1000) / 1000;
   };
 
   const mapLotteryToUniversalProps = (
@@ -221,10 +532,10 @@ export const Assistant: React.FC = () => {
 
     return {
       name: 'user',
-      win_rate: p.win_rate,
-      win_size: p.win_size,
-      frequency: p.frequency,
-      ticket_cost: p.ticket_cost,
+      win_rate: p.win_rate ?? 45,
+      win_size: p.win_size ?? 800_000,
+      frequency: p.frequency ?? 1 / 7,
+      ticket_cost: p.ticket_cost ?? 760,
       win_rate_k: clampWeight(merged.win_rate_k),
       win_size_k: clampWeight(merged.win_size_k),
       frequency_k: clampWeight(merged.frequency_k),
@@ -232,10 +543,6 @@ export const Assistant: React.FC = () => {
     };
   };
 
-  /**
-   * Вызываем /best_of и ВОЗВРАЩАЕМ РОВНО ПЕРВЫЕ `limit` лотерей
-   * в том же порядке, что и в ответе бэкенда (по diff).
-   */
   const callBestOf = async (
     p: Profile,
     sourceLotteries: Lottery[],
@@ -289,7 +596,7 @@ export const Assistant: React.FC = () => {
     }
   };
 
-  // ========= Завершение первой анкеты профиля =========
+  // Завершение первой анкеты
   const handleProfileComplete = async (p: Profile): Promise<void> => {
     setProfile(p);
 
@@ -327,7 +634,7 @@ export const Assistant: React.FC = () => {
     }, 700);
   }, [hasRefine, isRefineIntroLoading, profile, bestLotteries.length]);
 
-  // Второй вызов /best_of — после второй анкеты, уже с весами пользователя
+  // Финальный /best_of после уточняющих вопросов
   const handleFinalFromRefine = async (weights: RefineWeights): Promise<void> => {
     if (!profile) {
       return;
@@ -346,27 +653,42 @@ export const Assistant: React.FC = () => {
       setFinalLottery(final);
       setHasFinal(true);
     } catch {
-      // fallback поведения уже реализован через ?? выше
+      // fallback уже реализован через ?? выше
     } finally {
       setIsLoadingFinal(false);
     }
   };
 
+  const highlightAssistantRoot = isOnboardingOpen && currentStepId === 'intro';
+
+  const highlightQuick =
+    isOnboardingOpen && (currentStepId === 'quick' || currentStepId === 'start_button');
+
+  const highlightWizard =
+    isOnboardingOpen &&
+    (currentStepId === 'options' || currentStepId === 'win_rate' || currentStepId === 'win_size');
+
   return (
     <Box bg="transparent" minH="90vh" display="flex" flexDirection="column" flex="1">
       <Box
+        ref={assistantRootRef}
+        data-tour-id="assistant-root"
         bg="black"
         backdropFilter="blur(10px)"
         borderRadius={{ base: '0', md: '3xl' }}
         borderWidth={{ base: '0', md: '1px' }}
-        borderColor={borderColor}
-        boxShadow={containerShadow}
+        borderColor={highlightAssistantRoot ? '#FFD600' : borderColor}
+        boxShadow={highlightAssistantRoot ? '0 0 30px rgba(255, 214, 0, 0.7)' : containerShadow}
         display="flex"
         flexDirection="column"
         overflow="hidden"
         flex="1"
         h="100%"
+        style={{
+          transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
+        }}
       >
+        {/* Шапка с кнопкой показа подсказок */}
         <Box
           px={{ base: 4, md: 6 }}
           py={3}
@@ -385,8 +707,29 @@ export const Assistant: React.FC = () => {
             <Text fontSize="xs" color={textColor}>
               Подберу лотерею под твой стиль игры
             </Text>
+            {visitCount > 0 && (
+              <Text fontSize="xs" color="gray.400">
+                Твой визит: {visitCount + 1}
+              </Text>
+            )}
           </Stack>
+
           <HStack>
+            <Button
+              size="xs"
+              borderRadius="full"
+              variant="outline"
+              borderColor="#FFD600"
+              color="#FFD600"
+              _hover={{ bg: '#FFD600', color: '#000000' }}
+              onClick={() => {
+                setIsOnboardingOpen(true);
+                setOnboardingStepIndex(0);
+              }}
+            >
+              Показать подсказки
+            </Button>
+
             <Box
               w={8}
               h={8}
@@ -416,17 +759,17 @@ export const Assistant: React.FC = () => {
           </HStack>
         </Box>
 
+        {/* Тело ассистента */}
         <Box ref={messagesRef} px={{ base: 3, md: 5 }} py={4} flexGrow={1} overflowY="auto">
           <Stack>
             <ChatBubble role="assistant">
               <Stack>
-                <Text color={textColor}>
-                  Привет! 👋 Я помогу разобраться с лотереями: сначала покажу быстрые варианты, а
-                  если не зайдут — настроим подбор под твой стиль игры.
+                <Text color={textColor} fontSize="17px">
+                  Привет! 👋 Я помогу быстро подобрать лотерею под твой стиль игры.
                 </Text>
                 {isInitial && (
                   <Text fontSize="15.12px" color={textColor}>
-                    Можешь сразу посмотреть варианты ниже или запустить умный подбор.
+                    Можешь начать с быстрых вариантов ниже или сразу запустить умный подбор.
                   </Text>
                 )}
               </Stack>
@@ -434,16 +777,29 @@ export const Assistant: React.FC = () => {
 
             {/* Быстрые рекомендации только из Stoloto */}
             <ChatBubble role="assistant">
-              <QuickRecommendations
-                hasStartedQuestionnaire={hasStartedQuestionnaire}
-                setHasStartedQuestionnaire={setHasStartedQuestionnaire}
-                lotteries={quickLotteries}
-                isLoading={isStolotoLoading}
-                error={stolotoError}
-                onRetry={() => {
-                  void fetchDraws();
+              <Box
+                ref={quickBlockRef}
+                borderWidth={highlightQuick ? '2px' : '0px'}
+                borderColor={highlightQuick ? '#FFD600' : 'transparent'}
+                borderRadius="xl"
+                px={highlightQuick ? 2 : 0}
+                py={highlightQuick ? 2 : 0}
+                boxShadow={highlightQuick ? '0 0 26px rgba(255, 214, 0, 0.7)' : 'none'}
+                style={{
+                  transition: 'box-shadow 0.25s ease, border-color 0.25s ease, padding 0.25s ease',
                 }}
-              />
+              >
+                <QuickRecommendations
+                  hasStartedQuestionnaire={hasStartedQuestionnaire}
+                  setHasStartedQuestionnaire={setHasStartedQuestionnaire}
+                  lotteries={quickLotteries}
+                  isLoading={isStolotoLoading}
+                  error={stolotoError}
+                  onRetry={() => {
+                    void fetchDraws();
+                  }}
+                />
+              </Box>
             </ChatBubble>
 
             {hasStartedQuestionnaire && (
@@ -454,21 +810,35 @@ export const Assistant: React.FC = () => {
                   </Text>
                 </ChatBubble>
                 <ChatBubble role="assistant">
-                  <ProfileWizard
-                    onComplete={handleProfileComplete}
-                    onCancel={() => {
-                      setHasStartedQuestionnaire(false);
-                      setProfile(null);
-                      setBestLotteries([]);
-                      setHasResults(false);
-                      setHasRefine(false);
-                      setHasFinal(false);
-                      setFinalLottery(null);
+                  <Box
+                    ref={wizardBlockRef}
+                    borderWidth={highlightWizard ? '2px' : '0px'}
+                    borderColor={highlightWizard ? '#FFD600' : 'transparent'}
+                    borderRadius="xl"
+                    px={highlightWizard ? 2 : 0}
+                    py={highlightWizard ? 2 : 0}
+                    boxShadow={highlightWizard ? '0 0 26px rgba(255, 214, 0, 0.7)' : 'none'}
+                    style={{
+                      transition:
+                        'box-shadow 0.25s ease, border-color 0.25s ease, padding 0.25s ease',
                     }}
-                    onLotteriesChange={(nextLotteries: Lottery[]) => {
-                      setLotteries(nextLotteries);
-                    }}
-                  />
+                  >
+                    <ProfileWizard
+                      onComplete={handleProfileComplete}
+                      onCancel={() => {
+                        setHasStartedQuestionnaire(false);
+                        setProfile(null);
+                        setBestLotteries([]);
+                        setHasResults(false);
+                        setHasRefine(false);
+                        setHasFinal(false);
+                        setFinalLottery(null);
+                      }}
+                      onLotteriesChange={(nextLotteries: Lottery[]) => {
+                        setLotteries(nextLotteries);
+                      }}
+                    />
+                  </Box>
                 </ChatBubble>
               </>
             )}
@@ -526,8 +896,7 @@ export const Assistant: React.FC = () => {
                 <ChatBubble role="assistant">
                   <Stack>
                     <Text fontSize="15.12px" color={textColor}>
-                      Окей, ещё несколько уточняющих вопросов — и я пересчитаю подбор с учётом
-                      важности параметров.
+                      Ещё несколько вопросов — и я пересчитаю подбор с учётом твоих приоритетов.
                     </Text>
                     <RefineWizard
                       lotteries={bestLotteries}
@@ -579,6 +948,20 @@ export const Assistant: React.FC = () => {
           </Stack>
         </Box>
       </Box>
+
+      {/* Онбординг-тур с показом блоков интерфейса по 5 секунд */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        step={currentOnboardingStep}
+        totalSteps={ONBOARDING_STEPS.length}
+        stepIndex={onboardingStepIndex ?? 0}
+        onSkip={() => {
+          setIsOnboardingOpen(false);
+          setOnboardingStepIndex(null);
+        }}
+      />
     </Box>
   );
 };
+
+export default Assistant;

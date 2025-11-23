@@ -3,12 +3,12 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { AssistantPage, NotFoundPage } from '@pages';
+import LotteriesPage from '@/pages/lotteries/LotteriesPage';
 
 export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Главная страница ассистента */}
         <Route
           path="/"
           element={
@@ -17,8 +17,15 @@ export const AppRouter: React.FC = () => {
             </Layout>
           }
         />
+        <Route
+          path="/lotteries"
+          element={
+            <Layout>
+              <LotteriesPage />
+            </Layout>
+          }
+        />
 
-        {/* Любой неизвестный путь -> красивая 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

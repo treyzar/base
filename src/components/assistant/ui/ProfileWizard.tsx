@@ -1,4 +1,3 @@
-// src/components/assistant/ui/ProfileWizard.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   STEPS,
@@ -45,6 +44,20 @@ const parsePrice = (priceStr?: string): number => {
   return Number(digits.join('')) || 0;
 };
 
+// Диапазон стоимости билета по стилю игры
+const getTicketCostRange = (style: StyleValue | null): [number, number] => {
+  if (style === 'instant') {
+    // моментальные — 10–1500 ₽
+    return [10, 1500];
+  }
+  if (style === 'tirage') {
+    // тиражные — немного иной диапазон
+    return [50, 1000];
+  }
+  // any и всё остальное
+  return [10, 1500];
+};
+
 export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
   ({ onComplete, onCancel, onLotteriesChange }) => {
     const [stepIndex, setStepIndex] = useState(0);
@@ -78,7 +91,13 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
     const defaultWinRate = 40;
     const defaultWinSizeRange: [number, number] = [100_000, 500_000];
 
-    // Дефолты для win_rate / win_size при заходе на соответствующий шаг
+    // Диапазон цены билета по текущему стилю
+    const [ticketCostMin, ticketCostMax] = useMemo(() => {
+      const style = (profile.style ?? 'any') as StyleValue | null;
+      return getTicketCostRange(style);
+    }, [profile.style]);
+
+    // Дефолты для win_rate / win_size / ticket_cost
     useEffect(() => {
       const field = STEPS[stepIndex].field;
 
@@ -90,7 +109,21 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
         const avg = (defaultWinSizeRange[0] + defaultWinSizeRange[1]) / 2;
         setProfile((prev) => ({ ...prev, win_size: avg }));
       }
-    }, [stepIndex, profile.win_rate, profile.win_size, defaultWinRate, defaultWinSizeRange]);
+
+      if (field === 'ticket_cost' && profile.ticket_cost == null) {
+        const mid = (ticketCostMin + ticketCostMax) / 2;
+        setProfile((prev) => ({ ...prev, ticket_cost: mid }));
+      }
+    }, [
+      stepIndex,
+      profile.win_rate,
+      profile.win_size,
+      profile.ticket_cost,
+      defaultWinRate,
+      defaultWinSizeRange,
+      ticketCostMin,
+      ticketCostMax,
+    ]);
 
     const mapDrawsToLotteries = (games: any[]): Lottery[] =>
       games.map((game) => {
@@ -222,6 +255,16 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
       [isSubmitting, error]
     );
 
+    const handleTicketCostChange = useCallback(
+      (value: number) => {
+        if (isSubmitting) return;
+        console.log('[ProfileWizard] Смена ticket_cost слайдера:', value);
+        setProfile((prev) => ({ ...prev, ticket_cost: value }));
+        if (error) setError(null);
+      },
+      [isSubmitting, error]
+    );
+
     const handleNext = useCallback(async () => {
       if (isSubmitting) return;
 
@@ -230,7 +273,6 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
         return;
       }
 
-      // Первый шаг — выбор стиля, тянем лотереи из Stoloto + кэш
       if (stepIndex === 0 && profile.style) {
         const style = profile.style as StyleValue;
         console.log('[ProfileWizard] Первый шаг (style), выбран стиль:', style);
@@ -300,6 +342,11 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
             newProfile = { ...newProfile, win_size: avg };
           }
 
+          if (nextField === 'ticket_cost' && prev.ticket_cost == null) {
+            const mid = (ticketCostMin + ticketCostMax) / 2;
+            newProfile = { ...newProfile, ticket_cost: mid };
+          }
+
           return newProfile;
         });
       }
@@ -315,6 +362,8 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
       onLotteriesChange,
       defaultWinRate,
       defaultWinSizeRange,
+      ticketCostMin,
+      ticketCostMax,
     ]);
 
     const handleBack = useCallback(() => {
@@ -334,6 +383,8 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
     }, [stepIndex]);
 
     const winRateValue = (profile.win_rate as number | null) ?? defaultWinRate;
+    const ticketCostValue =
+      (profile.ticket_cost as number | null) ?? (ticketCostMin + ticketCostMax) / 2;
 
     const textColor = useColorModeValue('#000000', '#FFFFFF');
     const errorColor = '#FF4D4D';
@@ -380,7 +431,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
         <Stack>
           <Heading size="md">{currentStep.title}</Heading>
 
-          {currentStep.options.length > 0 && (
+          {currentStep.options.length > 0 && currentStep.field !== 'ticket_cost' && (
             <Stack>
               {currentStep.options.map((opt) => {
                 const active = profile[currentStep.field] === opt.value;
@@ -410,6 +461,39 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(
                 );
               })}
             </Stack>
+          )}
+
+          {currentStep.field === 'ticket_cost' && (
+            <Box pt={2}>
+              <Slider.Root
+                maxW="sm"
+                size="sm"
+                min={ticketCostMin}
+                max={ticketCostMax}
+                step={10}
+                defaultValue={[ticketCostValue]}
+                onValueChange={(details) => {
+                  const vArray = details.value as number[];
+                  if (!vArray || vArray.length === 0) return;
+                  handleTicketCostChange(vArray[0]);
+                }}
+              >
+                <HStack justify="space-between" mb={1}>
+                  <Slider.Label fontSize="17.28px">Примерная комфортная цена билета</Slider.Label>
+                  <Slider.ValueText />
+                </HStack>
+                <Slider.Control>
+                  <Slider.Track bg={progressTrackBg}>
+                    <Slider.Range bg={progressRangeBg} />
+                  </Slider.Track>
+                  <Slider.Thumbs />
+                </Slider.Control>
+              </Slider.Root>
+              <Text fontSize="15.12px" color={textColor} mt={2}>
+                Сейчас выбрано примерно {Math.round(ticketCostValue)} ₽ как комфортная стоимость
+                билета для твоей игры.
+              </Text>
+            </Box>
           )}
 
           {currentStep.field === 'win_rate' && (
