@@ -1,5 +1,5 @@
 // QuickRecommendations.tsx
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { getInitialLotteries } from '@/lib';
 import {
@@ -20,7 +20,7 @@ interface QuickRecommendationsProps {
   setHasStartedQuestionnaire: (hasStartedQuestionnaire: boolean) => void;
 }
 
-export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
+export const QuickRecommendations: React.FC<QuickRecommendationsProps> = React.memo(({
   hasStartedQuestionnaire,
   setHasStartedQuestionnaire,
 }) => {
@@ -28,6 +28,7 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
 
   const initialLotteries = useMemo(() => getInitialLotteries(), []);
   
+  // Стили для карточек лотерей (легкий серый градиент, без рамки в светлой теме)
   const cardBg = useColorModeValue('linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%)', '#000000');
   const cardBorder = useColorModeValue('0', '#000000');
   const cardBorderWidth = useColorModeValue('0px', '1px');
@@ -41,11 +42,11 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const handleStartQuestionnaire = () => {
+  const handleStartQuestionnaire = useCallback(() => {
     if (!hasStartedQuestionnaire) {
       setHasStartedQuestionnaire(true);
     }
-  };
+  }, [hasStartedQuestionnaire, setHasStartedQuestionnaire]);
 
   const textColor = useColorModeValue('#000000', '#FFFFFF');
   const spinnerColor = '#FFA500';
@@ -60,11 +61,11 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
   if (isLoading) {
     return (
       <Stack>
-        <Heading size="sm">Смотрю, с чего лучше начать…</Heading>
+        <Heading size="md">Смотрю, с чего лучше начать…</Heading>
         <Box py={2}>
           <Center flexDirection="column">
             <Spinner size="md" color={spinnerColor} mb={3} />
-            <Text fontSize="sm" color={textColor} textAlign="center">
+            <Text fontSize="17.28px" color={textColor} textAlign="center">
               Собираю несколько стартовых вариантов лотерей.
             </Text>
           </Center>
@@ -75,7 +76,7 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
 
   return (
     <Stack>
-      <Heading size="sm">Я нашёл несколько вариантов, с которых можно начать 👇</Heading>
+      <Heading size="md">Я нашёл несколько вариантов, с которых можно начать 👇</Heading>
       <SimpleGrid columns={{ base: 1, md: 3 }} gap="10px">
         {initialLotteries.map((lottery) => (
           <Box
@@ -88,10 +89,9 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
             boxShadow={cardShadow}
           >
             <Stack>
-              <Heading size="xs">{lottery.name}</Heading>
-              <Text fontSize="xs" color={textColor}>
-                {lottery.description}
-              </Text>
+              <Heading size="md">{lottery.name}</Heading>
+              
+              {/* Бэйджи перемещены сюда, сразу после названия */}
               <HStack mt={1} wrap="wrap">
                 <Badge bg={badgePriceBg} color={badgePriceColor}>{lottery.minPrice} ₽</Badge>
                 <Badge
@@ -102,23 +102,27 @@ export const QuickRecommendations: React.FC<QuickRecommendationsProps> = ({
                 >
                   Риск: {lottery.risk}
                 </Badge>
-                <Badge variant="outline" fontSize="0.65rem" borderColor={badgeTypeBorder} color={badgeTypeColor}>
+                <Badge variant="outline" fontSize="0.7rem" borderColor={badgeTypeBorder} color={badgeTypeColor}>
                   {lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
                 </Badge>
               </HStack>
+
+              <Text fontSize="15.12px" color={textColor}>
+                {lottery.description}
+              </Text>
             </Stack>
           </Box>
         ))}
       </SimpleGrid>
 
       <HStack justify="space-between" pt={2}>
-        <Text fontSize="sm" color={textColor}>
+        <Text fontSize="15.12px" color={textColor}>
           Если эти варианты не заходят — давай настроим подбор под тебя.
         </Text>
-        <Button bg={buttonBg} color={buttonColor} size="sm" onClick={handleStartQuestionnaire} borderRadius="full"> {/* Made more rounded */}
+        <Button bg={buttonBg} color={buttonColor} size="sm" onClick={handleStartQuestionnaire} borderRadius="full">
           Настроить под себя
         </Button>
       </HStack>
     </Stack>
   );
-};
+});

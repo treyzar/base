@@ -1,11 +1,12 @@
 // RefineWizard.tsx
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { chooseFinalLottery } from '@lib';
 import { Stack, Box, HStack, Text, Progress, Button, Heading } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { type RefineWizardProps, type MicroAnswers, MICRO_STEPS, type MicroField } from '@lib';
+import React from 'react';
 
-export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, onComplete }) => {
+export const RefineWizard: React.FC<RefineWizardProps> = React.memo(({ lotteries, profile, onComplete }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<MicroAnswers>({
     pricePriority: null,
@@ -17,13 +18,13 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
 
   const currentStep = MICRO_STEPS[stepIndex];
 
-  const handleSelect = (field: MicroField, value: MicroAnswers[MicroField]) => {
+  const handleSelect = useCallback((field: MicroField, value: MicroAnswers[MicroField]) => {
     if (isSubmitting) return;
     setAnswers((prev) => ({ ...prev, [field]: value }));
     if (error) setError(null);
-  };
+  }, [isSubmitting, error]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (isSubmitting) return;
 
     if (!answers[currentStep.field]) {
@@ -39,19 +40,20 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
     }
 
     setStepIndex((i) => i + 1);
-  };
+  }, [isSubmitting, answers, currentStep.field, stepIndex, lotteries, profile, onComplete]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (isSubmitting) return;
     setError(null);
     if (stepIndex === 0) return;
     setStepIndex((i) => i - 1);
-  };
+  }, [isSubmitting, stepIndex]);
 
   const PROGRESS_BY_STEP = [0, 50, 100];
 
-  const progressPercent =
-    PROGRESS_BY_STEP[stepIndex] ?? PROGRESS_BY_STEP[PROGRESS_BY_STEP.length - 1];
+  const progressPercent = useMemo(() => {
+    return PROGRESS_BY_STEP[stepIndex] ?? PROGRESS_BY_STEP[PROGRESS_BY_STEP.length - 1];
+  }, [stepIndex]);
 
   const textColor = useColorModeValue('#000000', '#FFFFFF');
   const errorColor = '#FF4D4D';
@@ -69,10 +71,10 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
     <Stack>
       <Box>
         <HStack justify="space-between" mb={2}>
-          <Text fontSize="xs" color={textColor}>
+          <Text fontSize="15.12px" color={textColor}>
             Дополнительные вопросы {stepIndex + 1} из {MICRO_STEPS.length}
           </Text>
-          <Text fontSize="xs" color={textColor}>
+          <Text fontSize="15.12px" color={textColor}>
             {Math.round(progressPercent)}%
           </Text>
         </HStack>
@@ -84,7 +86,7 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
       </Box>
 
       <Stack>
-        <Heading size="sm"> {currentStep.title}</Heading>
+        <Heading size="md"> {currentStep.title}</Heading>
         <Stack>
           {currentStep.options.map((opt) => {
             const active = answers[currentStep.field] === opt.value;
@@ -96,8 +98,8 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
                 color={active ? buttonActiveColor : buttonInactiveColor}
                 justifyContent="flex-start"
                 w="100%"
-                borderRadius="full" // Made more rounded
-                size="sm"
+                borderRadius="full"
+                size="md" // Размер кнопки не меняем
                 fontWeight="normal"
                 whiteSpace="normal"
                 textAlign="left"
@@ -107,26 +109,28 @@ export const RefineWizard: React.FC<RefineWizardProps> = ({ lotteries, profile, 
                 disabled={isSubmitting}
                 borderColor={buttonBorderColor}
               >
-                {opt.label}
+                <Box as="span" w="100%" textAlign="left" fontSize="17.28px">
+                  {opt.label}
+                </Box>
               </Button>
             );
           })}
         </Stack>
         {error && (
-          <Text fontSize="xs" color={errorColor}>
+          <Text fontSize="15.12px" color={errorColor}>
             {error}
           </Text>
         )}
       </Stack>
 
       <HStack justify="space-between" pt={2}>
-        <Button variant="ghost" size="sm" onClick={handleBack} disabled={isSubmitting} color={backButtonColor} borderRadius="full"> {/* Made more rounded */}
+        <Button variant="ghost" size="sm" onClick={handleBack} disabled={isSubmitting} color={backButtonColor} borderRadius="full">
           Назад
         </Button>
-        <Button bg={nextButtonBg} color={nextButtonColor} size="sm" onClick={handleNext} disabled={isSubmitting} borderRadius="full"> {/* Made more rounded */}
+        <Button bg={nextButtonBg} color={nextButtonColor} size="sm" onClick={handleNext} disabled={isSubmitting} borderRadius="full">
           {stepIndex === MICRO_STEPS.length - 1 ? 'Выбрать лучший вариант' : 'Далее'}
         </Button>
       </HStack>
     </Stack>
   );
-};
+});

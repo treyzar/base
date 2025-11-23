@@ -4,11 +4,12 @@ import { useColorModeValue } from '@/components/ui/color-mode';
 import { Stack, Heading, SimpleGrid, Box, HStack, Badge, Text, Button } from '@chakra-ui/react';
 import { ResultsBlockProps, explainMatch } from '@/lib';
 
-export const ResultsBlock: React.FC<ResultsBlockProps> = ({
+export const ResultsBlock: React.FC<ResultsBlockProps> = React.memo(({
   profile,
   bestLotteries,
   onGoRefine,
 }) => {
+  // Стили для карточек лотерей (легкий серый градиент, без рамки в светлой теме)
   const cardBg = useColorModeValue('linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%)', '#000000');
   const cardBorder = useColorModeValue('0', '#000000');
   const cardBorderWidth = useColorModeValue('0px', '1px');
@@ -26,7 +27,7 @@ export const ResultsBlock: React.FC<ResultsBlockProps> = ({
 
   return (
     <Stack>
-      <Heading size="sm">По твоим ответам лучше всего подошли эти лотереи:</Heading>
+      <Heading size="md">По твоим ответам лучше всего подошли эти лотереи:</Heading>
 
       <SimpleGrid columns={{ base: 1, md: bestLotteries.length === 2 ? 2 : 3 }} gap="10px">
         {bestLotteries.map((lottery) => (
@@ -40,7 +41,7 @@ export const ResultsBlock: React.FC<ResultsBlockProps> = ({
             boxShadow={cardShadow}
           >
             <Stack>
-              <Heading size="xs">{lottery.name}</Heading>
+              <Heading size="md">{lottery.name}</Heading>
               <HStack>
                 <Badge bg={badgePriceBg} color={badgePriceColor}>{lottery.minPrice} ₽</Badge>
                 <Badge
@@ -51,20 +52,20 @@ export const ResultsBlock: React.FC<ResultsBlockProps> = ({
                 >
                   Риск: {lottery.risk}
                 </Badge>
-                <Badge variant="outline" fontSize="0.65rem" borderColor={badgeTypeBorder} color={outlineColor}>
+                <Badge variant="outline" fontSize="0.7rem" borderColor={badgeTypeBorder} color={outlineColor}>
                   {lottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
                 </Badge>
               </HStack>
-              <Text fontSize="xs" color={textColor}>
+              <Text fontSize="15.12px" color={textColor}>
                 {lottery.description}
               </Text>
-              <Text fontSize="xs" color={textColor}>{explainMatch(profile, lottery)}</Text>
+              <Text fontSize="15.12px" color={textColor}>{explainMatch(profile, lottery)}</Text>
 
               <Box pt={1}>
-                <Text fontSize="0.65rem" color={textColor} mb={1}>
+                <Text fontSize="15.12px" color={textColor} mb={1}>
                   Особенности:
                 </Text>
-                <Stack fontSize="0.7rem">
+                <Stack fontSize="15.12px">
                   {lottery.features.map((f) => (
                     <Text key={f} color={textColor}>• {f}</Text>
                   ))}
@@ -76,13 +77,13 @@ export const ResultsBlock: React.FC<ResultsBlockProps> = ({
       </SimpleGrid>
 
       <HStack justify="space-between" pt={1}>
-        <Text fontSize="sm" color={textColor}>
+        <Text fontSize="15.12px" color={textColor}>
           Теперь ещё несколько уточняющих вопросов — и выберем один лучший вариант.
         </Text>
-        <Button bg={buttonBg} color={buttonColor} size="sm" onClick={onGoRefine} borderRadius="full"> {/* Made more rounded */}
+        <Button bg={buttonBg} color={buttonColor} size="sm" onClick={onGoRefine} borderRadius="full">
           Уточнить и выбрать один
         </Button>
       </HStack>
     </Stack>
   );
-};
+});

@@ -1,5 +1,5 @@
 // Assistant.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Text, Stack, HStack, Badge, Spinner, Center } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { type Profile, type Lottery, scoreLottery, MOCK_LOTTERIES } from '@/lib';
@@ -54,7 +54,7 @@ export const Assistant: React.FC = () => {
     !hasFinal &&
     !isRefineIntroLoading;
 
-  const handleProfileComplete = (p: Profile) => {
+  const handleProfileComplete = useCallback((p: Profile) => {
     setProfile(p);
 
     const scored = [...MOCK_LOTTERIES]
@@ -72,25 +72,34 @@ export const Assistant: React.FC = () => {
       setIsLoadingResults(false);
       setHasResults(true);
     }, 800);
-  };
+  }, []);
 
-  const handleGoRefine = () => {
+  const handleGoRefine = useCallback(() => {
     if (hasRefine || isRefineIntroLoading || !profile || bestLotteries.length === 0) return;
     setIsRefineIntroLoading(true);
     setTimeout(() => {
       setIsRefineIntroLoading(false);
       setHasRefine(true);
     }, 700);
-  };
+  }, [hasRefine, isRefineIntroLoading, profile, bestLotteries.length]);
 
-  const handleFinalFromRefine = (lottery: Lottery) => {
+  const handleFinalFromRefine = useCallback((lottery: Lottery) => {
     setIsLoadingFinal(true);
     setTimeout(() => {
       setFinalLottery(lottery);
       setHasFinal(true);
       setIsLoadingFinal(false);
     }, 800);
-  };
+  }, []);
+
+  const handleProfileCancel = useCallback(() => {
+    setHasStartedQuestionnaire(false);
+    setProfile(null);
+    setBestLotteries([]);
+    setHasResults(false);
+    setHasRefine(false);
+    setHasFinal(false);
+  }, []);
 
   const chatBg = useColorModeValue('rgba(255, 255, 255, 0.5)', 'rgba(0, 0, 0, 0.5)'); 
   const borderColor = useColorModeValue('gray.400', 'black'); 
@@ -118,7 +127,7 @@ export const Assistant: React.FC = () => {
         borderRadius={{ base: '0', md: '3xl' }}
         borderWidth={{ base: '0', md: '1px' }}
         borderColor={borderColor} 
-        boxShadow={containerShadow} // Применена тень ко всем сторонам
+        boxShadow={containerShadow}
         display="flex"
         flexDirection="column"
         overflow="hidden"
@@ -189,7 +198,7 @@ export const Assistant: React.FC = () => {
                   если не зайдут — настроим подбор под твой стиль игры.
                 </Text>
                 {isInitial && (
-                  <Text fontSize="sm" color={textColor}>
+                  <Text fontSize="15.12px" color={textColor}>
                     Можешь сразу посмотреть варианты ниже или запустить умный подбор.
                   </Text>
                 )}
@@ -206,19 +215,12 @@ export const Assistant: React.FC = () => {
             {hasStartedQuestionnaire && (
               <>
                 <ChatBubble role="user">
-                  <Text fontSize="sm" color={textColor}>Хочу настроить подбор под себя.</Text>
+                  <Text fontSize="15.12px" color={textColor}>Хочу настроить подбор под себя.</Text>
                 </ChatBubble>
                 <ChatBubble role="assistant">
                   <ProfileWizard
                     onComplete={handleProfileComplete}
-                    onCancel={() => {
-                      setHasStartedQuestionnaire(false);
-                      setProfile(null);
-                      setBestLotteries([]);
-                      setHasResults(false);
-                      setHasRefine(false);
-                      setHasFinal(false);
-                    }}
+                    onCancel={handleProfileCancel}
                   />
                 </ChatBubble>
               </>
@@ -229,7 +231,7 @@ export const Assistant: React.FC = () => {
                 <Box py={2}>
                   <Center flexDirection="column">
                     <Spinner size="md" color={spinnerColorResults} mb={3} />
-                    <Text fontSize="sm" color={textColor} textAlign="center">
+                    <Text fontSize="15.12px" color={textColor} textAlign="center">
                       Анализирую твои ответы и подбираю лучшие варианты…
                     </Text>
                   </Center>
@@ -240,7 +242,7 @@ export const Assistant: React.FC = () => {
             {hasResults && (
               <>
                 <ChatBubble role="user">
-                  <Text fontSize="sm" color={textColor}>Готов увидеть рекомендации, что ты подобрал?</Text>
+                  <Text fontSize="15.12px" color={textColor}>Готов увидеть рекомендации, что ты подобрал?</Text>
                 </ChatBubble>
                 <ChatBubble role="assistant">
                   <ResultsBlock
@@ -257,7 +259,7 @@ export const Assistant: React.FC = () => {
                 <Box py={2}>
                   <Center flexDirection="column">
                     <Spinner size="sm" color={spinnerColorRefine} mb={2} />
-                    <Text fontSize="sm" color={textColor} textAlign="center">
+                    <Text fontSize="15.12px" color={textColor} textAlign="center">
                       Секунду, уточняю детали по этим лотереям…
                     </Text>
                   </Center>
@@ -268,13 +270,13 @@ export const Assistant: React.FC = () => {
             {hasRefine && profile && bestLotteries.length > 0 && (
               <>
                 <ChatBubble role="user">
-                  <Text fontSize="sm" color={textColor}>
+                  <Text fontSize="15.12px" color={textColor}>
                     Давай уточним и выберем один лучший вариант из этих трёх.
                   </Text>
                 </ChatBubble>
                 <ChatBubble role="assistant">
                   <Stack>
-                    <Text fontSize="sm" color={textColor}>
+                    <Text fontSize="15.12px" color={textColor}>
                       Окей, ещё несколько уточняющих вопросов — и выберем один лучший вариант.
                     </Text>
                     <RefineWizard
@@ -292,7 +294,7 @@ export const Assistant: React.FC = () => {
                 <Box py={2}>
                   <Center flexDirection="column">
                     <Spinner size="md" color={spinnerColorFinal} mb={3} />
-                    <Text fontSize="sm" color={textColor} textAlign="center">
+                    <Text fontSize="15.12px" color={textColor} textAlign="center">
                       Формирую финальную рекомендацию…
                     </Text>
                   </Center>
@@ -303,7 +305,7 @@ export const Assistant: React.FC = () => {
             {hasFinal && finalLottery && profile && (
               <>
                 <ChatBubble role="user">
-                  <Text fontSize="sm" color={textColor}>
+                  <Text fontSize="15.12px" color={textColor}>
                     Хочу остановиться на одном варианте, покажи итоговую рекомендацию.
                   </Text>
                 </ChatBubble>

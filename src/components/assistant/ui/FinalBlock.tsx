@@ -2,8 +2,9 @@
 import { useColorModeValue } from '@/components/ui/color-mode';
 import { Stack, Heading, Box, HStack, Badge, Text, Button } from '@chakra-ui/react';
 import { explainMatch, handleRestart, FinalBlockProps } from '@lib';
+import React from 'react';
 
-export const FinalBlock: React.FC<FinalBlockProps> = ({
+export const FinalBlock: React.FC<FinalBlockProps> = React.memo(({
   profile,
   finalLottery,
   setProfile,
@@ -16,6 +17,7 @@ export const FinalBlock: React.FC<FinalBlockProps> = ({
   setHasFinal,
   setIsLoadingFinal,
 }) => {
+  // Стили для карточки лотереи (легкий серый градиент, без рамки в светлой теме)
   const cardBg = useColorModeValue('linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%)', '#000000');
   const cardBorder = useColorModeValue('0', '#000000');
   const cardBorderWidth = useColorModeValue('0px', '1px');
@@ -34,7 +36,7 @@ export const FinalBlock: React.FC<FinalBlockProps> = ({
 
   return (
     <Stack>
-      <Heading size="sm">С учётом всех ответов тебе больше всего подходит:</Heading>
+      <Heading size="md">С учётом всех ответов тебе больше всего подходит:</Heading>
 
       <Box
         borderWidth={cardBorderWidth}
@@ -44,7 +46,7 @@ export const FinalBlock: React.FC<FinalBlockProps> = ({
         bg={cardBg}
         boxShadow={cardShadow} 
       >
-        <Heading size="md" mb={2}>
+        <Heading size="lg" mb={2}>
           {finalLottery.name}
         </Heading>
         <HStack mb={3}>
@@ -61,25 +63,27 @@ export const FinalBlock: React.FC<FinalBlockProps> = ({
           >
             Риск: {finalLottery.risk}
           </Badge>
-          <Badge variant="outline" borderColor={badgeTypeBorder} color={outlineColor}>
+          <Badge variant="outline" borderColor={badgeTypeBorder} color={outlineColor} fontSize="0.7rem">
             {finalLottery.drawType === 'draw' ? 'Тиражная' : 'Моментальная'}
           </Badge>
-          <Badge variant="outline" borderColor={badgeTypeBorder} color={outlineColor}>{finalLottery.format === 'online' ? 'Онлайн' : 'Оффлайн'}</Badge>
+          <Badge variant="outline" borderColor={badgeTypeBorder} color={outlineColor} fontSize="0.7rem">{finalLottery.format === 'online' ? 'Онлайн' : 'Оффлайн'}</Badge>
         </HStack>
 
-        <Text mb={3} color={textColor}>{finalLottery.description}</Text>
+        <Text mb={3} color={textColor} fontSize="17.28px">
+          {finalLottery.description}
+        </Text>
 
-        <Text fontSize="sm" fontWeight="semibold" mb={1} color={textColor}>
+        <Text fontSize="17.28px" fontWeight="semibold" mb={1} color={textColor}>
           Почему это подходит именно тебе:
         </Text>
-        <Text fontSize="sm" mb={3} color={textColor}>
+        <Text fontSize="17.28px" mb={3} color={textColor}>
           {explainMatch(profile, finalLottery)}
         </Text>
 
-        <Text fontSize="sm" color={textColor} mb={2}>
+        <Text fontSize="17.28px" color={textColor} mb={2}>
           Особенности:
         </Text>
-        <Stack fontSize="sm">
+        <Stack fontSize="17.28px">
           {finalLottery.features.map((f) => (
             <Text key={f} color={textColor}>• {f}</Text>
           ))}
@@ -105,10 +109,10 @@ export const FinalBlock: React.FC<FinalBlockProps> = ({
         }
         bg={buttonBg}
         color={buttonColor}
-        borderRadius="full" // Made more rounded
+        borderRadius="full"
       >
         Начать подбор заново
       </Button>
     </Stack>
   );
-};
+});

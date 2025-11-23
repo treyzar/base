@@ -1,10 +1,10 @@
-// ProfileWizard.tsx
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { STEPS, type ProfileWizardProps, type Profile, type Field, type Answer } from '@lib';
 import { Stack, Box, HStack, Text, Progress, Heading, Button, Slider } from '@chakra-ui/react';
 import { useColorModeValue } from '@/components/ui/color-mode';
+import React from 'react';
 
-export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCancel }) => {
+export const ProfileWizard: React.FC<ProfileWizardProps> = React.memo(({ onComplete, onCancel }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [profile, setProfile] = useState<Profile>({
     style: null,
@@ -27,39 +27,26 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
   const defaultWinRate = 40;
   const defaultWinSizeRange: [number, number] = [100_000, 500_000];
 
-  useEffect(() => {
-    const field = STEPS[stepIndex].field;
-
-    if (field === 'win_rate' && profile.win_rate == null) {
-      setProfile((prev) => ({ ...prev, win_rate: defaultWinRate }));
-    }
-
-    if (field === 'win_size' && profile.win_size == null) {
-      const avg = (defaultWinSizeRange[0] + defaultWinSizeRange[1]) / 2;
-      setProfile((prev) => ({ ...prev, win_size: avg }));
-    }
-  }, [stepIndex, profile.win_rate, profile.win_size, defaultWinRate, defaultWinSizeRange]);
-
-  const handleSelect = (field: Field, value: Answer) => {
+  const handleSelect = useCallback((field: Field, value: Answer) => {
     if (isSubmitting) return;
     setProfile((prev) => ({ ...prev, [field]: value }));
     if (error) setError(null);
-  };
+  }, [isSubmitting, error]);
 
-  const handleWinRateChange = (value: number) => {
+  const handleWinRateChange = useCallback((value: number) => {
     if (isSubmitting) return;
     setProfile((prev) => ({ ...prev, win_rate: value }));
     if (error) setError(null);
-  };
+  }, [isSubmitting, error]);
 
-  const handleWinSizeChange = (min: number, max: number) => {
+  const handleWinSizeChange = useCallback((min: number, max: number) => {
     if (isSubmitting) return;
     const avg = (min + max) / 2;
     setProfile((prev) => ({ ...prev, win_size: avg }));
     if (error) setError(null);
-  };
+  }, [isSubmitting, error]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (isSubmitting) return;
 
     if (!profile[currentStep.field]) {
@@ -73,10 +60,30 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
       return;
     }
 
-    setStepIndex((i) => i + 1);
-  };
+    const nextStepIndex = stepIndex + 1;
+    const nextField = STEPS[nextStepIndex]?.field;
 
-  const handleBack = () => {
+    if (nextField) {
+        setProfile((prev) => {
+            let newProfile = prev;
+
+            if (nextField === 'win_rate' && prev.win_rate == null) {
+                newProfile = { ...newProfile, win_rate: defaultWinRate };
+            }
+
+            if (nextField === 'win_size' && prev.win_size == null) {
+                const avg = (defaultWinSizeRange[0] + defaultWinSizeRange[1]) / 2;
+                newProfile = { ...newProfile, win_size: avg };
+            }
+            
+            return newProfile;
+        });
+    }
+
+    setStepIndex((i) => i + 1);
+  }, [isSubmitting, profile, currentStep.field, stepIndex, onComplete]);
+
+  const handleBack = useCallback(() => {
     if (isSubmitting) return;
     setError(null);
     if (stepIndex === 0) {
@@ -84,10 +91,13 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
       return;
     }
     setStepIndex((i) => i - 1);
-  };
+  }, [isSubmitting, stepIndex, onCancel]);
 
-  const progressPercent = STEPS.length > 1 ? (stepIndex / (STEPS.length - 1)) * 100 : 100;
+  const progressPercent = useMemo(() => {
+    return STEPS.length > 1 ? (stepIndex / (STEPS.length - 1)) * 100 : 100;
+  }, [stepIndex]);
 
+  // Если profile.win_rate null, используем defaultWinRate для отображения
   const winRateValue = (profile.win_rate as number | null) ?? defaultWinRate;
 
   const textColor = useColorModeValue('#000000', '#FFFFFF');
@@ -106,10 +116,10 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
     <Stack>
       <Box>
         <HStack justify="space-between" mb={2}>
-          <Text fontSize="xs" color={textColor}>
+          <Text fontSize="15.12px" color={textColor}>
             Анкета: шаг {stepIndex + 1} из {STEPS.length}
           </Text>
-          <Text fontSize="xs" color={textColor}>
+          <Text fontSize="15.12px" color={textColor}>
             {Math.round(progressPercent)}%
           </Text>
         </HStack>
@@ -121,7 +131,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
       </Box>
 
       <Stack>
-        <Heading size="sm">{currentStep.title}</Heading>
+        <Heading size="md">{currentStep.title}</Heading>
 
         {currentStep.options.length > 0 && (
           <Stack>
@@ -135,8 +145,8 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
                   color={active ? buttonActiveColor : buttonInactiveColor}
                   justifyContent="flex-start"
                   w="100%"
-                  borderRadius="full" // Made more rounded
-                  size="sm"
+                  borderRadius="full"
+                  size="md"
                   fontWeight="normal"
                   whiteSpace="normal"
                   textAlign="left"
@@ -146,7 +156,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
                   disabled={isSubmitting}
                   borderColor={buttonBorderColor}
                 >
-                  <Box as="span" w="100%" textAlign="left">
+                  <Box as="span" w="100%" textAlign="left" fontSize="17.28px">
                     {opt.label}
                   </Box>
                 </Button>
@@ -164,13 +174,13 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
               max={100}
               defaultValue={[winRateValue]}
               onValueChange={(details) => {
-                const vArray = details.value as number[];
+                const vArray = details.value as number[]; 
                 if (!vArray || vArray.length === 0) return;
                 handleWinRateChange(vArray[0]);
               }}
             >
               <HStack justify="space-between" mb={1}>
-                <Slider.Label>Желаемая частота выигрышей</Slider.Label>
+                <Slider.Label fontSize="17.28px">Желаемая частота выигрышей</Slider.Label>
                 <Slider.ValueText />
               </HStack>
               <Slider.Control>
@@ -180,7 +190,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
                 <Slider.Thumbs />
               </Slider.Control>
             </Slider.Root>
-            <Text fontSize="xs" color={textColor} mt={2}>
+            <Text fontSize="15.12px" color={textColor} mt={2}>
               Сейчас выбрано примерно {winRateValue}% раз, когда ты ожидаешь выигрыш.
             </Text>
           </Box>
@@ -193,7 +203,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
               min={10_000}
               max={1_000_000}
               step={10_000}
-              defaultValue={defaultWinSizeRange}
+              defaultValue={defaultWinSizeRange} 
               minStepsBetweenThumbs={1}
               onValueChange={(details) => {
                 const vArray = details.value as number[];
@@ -208,7 +218,7 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
                 <Slider.Thumbs />
               </Slider.Control>
             </Slider.Root>
-            <Text fontSize="xs" color={textColor} mt={2}>
+            <Text fontSize="15.12px" color={textColor} mt={2}>
               Средний желаемый размер выигрыша:{' '}
               {profile.win_size ? `${Math.round(profile.win_size as number)} ₽` : 'пока не задан'}.
             </Text>
@@ -216,20 +226,20 @@ export const ProfileWizard: React.FC<ProfileWizardProps> = ({ onComplete, onCanc
         )}
 
         {error && (
-          <Text fontSize="xs" color={errorColor}>
+          <Text fontSize="15.12px" color={errorColor}>
             {error}
           </Text>
         )}
       </Stack>
 
       <HStack justify="space-between" pt={1}>
-        <Button variant="ghost" size="sm" onClick={handleBack} disabled={isSubmitting} color={backButtonColor} borderRadius="full"> {/* Made more rounded */}
+        <Button variant="ghost" size="sm" onClick={handleBack} disabled={isSubmitting} color={backButtonColor} borderRadius="full">
           Назад
         </Button>
-        <Button bg={nextButtonBg} color={nextButtonColor} size="sm" onClick={handleNext} disabled={isSubmitting} borderRadius="full"> {/* Made more rounded */}
+        <Button bg={nextButtonBg} color={nextButtonColor} size="sm" onClick={handleNext} disabled={isSubmitting} borderRadius="full">
           {stepIndex === STEPS.length - 1 ? 'Показать рекомендации' : 'Далее'}
         </Button>
       </HStack>
     </Stack>
   );
-};
+});
