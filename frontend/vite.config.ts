@@ -26,7 +26,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/stoloto': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:9090',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/stoloto/, '/api'),
